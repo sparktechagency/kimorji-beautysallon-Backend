@@ -9,4 +9,4 @@ const createAdminZodSchema = z.object({
     })
 });
 
-export const UserValidation = { createAdminZodSchema };  
+export const UserValidation = { createAdminZodSchema }; 

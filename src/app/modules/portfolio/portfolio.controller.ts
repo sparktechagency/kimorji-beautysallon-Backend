@@ -26,7 +26,7 @@ const deletePortfolio = catchAsync(async (req: Request, res: Response) => {
       data: result,
     });
 });
-  
+
 const getPortfolio = catchAsync(async (req: Request, res: Response) => {
     const result = await PortfolioService.portfolioFromDB();
   

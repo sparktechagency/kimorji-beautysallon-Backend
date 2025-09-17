@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.post(
     '/login',
-    validateRequest(AuthValidation.createLoginZodSchema),
+    
     AuthController.loginUser
 );
 
@@ -23,11 +23,11 @@ router.post(
     AuthController.newAccessToken
 );
 
-router.post(
-    '/verify-mobile',
-    validateRequest(AuthValidation.verifyOtpSchema),
-    AuthController.verifyMobile
-);
+// router.post(
+//     '/verify-mobile',
+//     validateRequest(AuthValidation.verifyOtpSchema),
+//     AuthController.verifyMobile
+// );
 
 router.post(
     '/reset-password',
@@ -50,6 +50,11 @@ router.post(
     auth(USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER, USER_ROLES.SUPER_ADMIN),
     validateRequest(AuthValidation.createChangePasswordZodSchema),
     AuthController.changePassword
+);
+//verify phone-otp
+router.post(
+    '/verify-otp',
+    AuthController.verifyOTP
 );
 
 router.delete(

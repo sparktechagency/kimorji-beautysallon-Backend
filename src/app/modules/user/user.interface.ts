@@ -17,11 +17,12 @@ interface IAuthenticationProps {
 }
 
 export type IUser = {
+    _id: any;
     name: string;
     appId?: string;
     role: USER_ROLES;
     mobileNumber: string;
-    email: string;
+    email?: string;
     password: string;
     isSubscribed?: boolean;
     location: {};
