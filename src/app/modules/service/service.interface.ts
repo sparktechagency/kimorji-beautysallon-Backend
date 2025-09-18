@@ -1,8 +1,10 @@
 import { Model, Types } from "mongoose";
+import { ServiceType } from "../../../enums/serviceType";
 
 
 export type IService = {
     barber: Types.ObjectId;
+    serviceType: ServiceType;
     title: Types.ObjectId;
     category: Types.ObjectId;
     image: String;

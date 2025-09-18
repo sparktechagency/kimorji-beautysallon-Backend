@@ -1,9 +1,15 @@
 import { model, Schema } from "mongoose";
 import { IService, ServiceModel } from "./service.interface";
+import { ServiceType } from "../../../enums/serviceType";
 
 
 const serviceSchema = new Schema<IService, ServiceModel>(
     {
+        serviceType: {
+            type: String,
+            enum: Object.values(ServiceType),
+            required: false
+        },
         title: {
             type: Schema.Types.ObjectId,
             ref: "SubCategory",
