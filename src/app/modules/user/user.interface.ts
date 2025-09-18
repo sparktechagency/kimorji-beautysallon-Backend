@@ -11,8 +11,7 @@ interface IStripeAccountInfo {
 
 interface IAuthenticationProps {
     isResetPassword: boolean;
-    otpCode: number;
-    oneTimeCode: string;
+    otpCode: string;
     expireAt: Date;
 }
 
@@ -21,7 +20,7 @@ export type IUser = {
     name: string;
     appId?: string;
     role: USER_ROLES;
-    mobileNumber: string;
+    mobileNumber?: string;
     email?: string;
     password: string;
     isSubscribed?: boolean;
@@ -34,7 +33,13 @@ export type IUser = {
     verified: boolean;
     discount?: number;
     deviceToken?: string;
-    authentication?: IAuthenticationProps;
+    // authentication?: IAuthenticationProps;
+    // authentication: IAuthenticationProps;
+    authentication: {
+        isResetPassword: boolean;
+        otpCode: string;
+        expireAt: Date;
+    };
     accountInformation?: IStripeAccountInfo;
 }
 

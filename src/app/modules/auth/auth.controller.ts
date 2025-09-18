@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
@@ -35,30 +35,72 @@ const verifyEmail = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-// const loginUser = catchAsync(async (req: Request, res: Response) => {
-//     const { ...loginData } = req.body;
-//     const result = await AuthService.loginUserFromDB(loginData);
-
-//     sendResponse(res, {
-//         success: true,
-//         statusCode: StatusCodes.OK,
-//         message: 'User login successfully',
-//         data: result
-//     });
-// });
-
 const loginUser = catchAsync(async (req: Request, res: Response) => {
-    const { phoneNumber } = req.body; // We are using phoneNumber to login
-    const result = await AuthService.loginUserFromDB(phoneNumber, req.body.deviceToken);
+    const { ...loginData } = req.body;
+    const result = await AuthService.loginUserFromDB(loginData);
 
     sendResponse(res, {
         success: true,
         statusCode: StatusCodes.OK,
-        message: 'OTP sent successfully, please verify to login.',
+        message: 'User login successfully',
         data: result
     });
 });
 
+// //mobile number login
+// const loginUser = catchAsync(async (req: Request, res: Response) => {
+//     const { phoneNumber } = req.body; // We are using phoneNumber to login
+//     const result = await AuthService.loginUserFromDB(phoneNumber, req.body.deviceToken);
+
+//     sendResponse(res, {
+//         success: true,
+//         statusCode: StatusCodes.OK,
+//         message: 'OTP sent successfully, please verify to login.',
+//         data: result
+//     });
+// });
+
+ const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { mobileNumber, fcmToken, deviceId, deviceType = 'android' } = req.body;
+
+    if (!mobileNumber) {
+      throw new AppError("Mobile number is required", 400);
+    }
+
+    // Call the service method for login or registration
+    const result = await AuthService.loginService(mobileNumber, fcmToken, deviceId, deviceType);
+
+    res.status(200).json({
+      status: "success",
+      message: result.message,
+      userId: result.userId
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+ const verifyLoginOTP = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { mobileNumber, otpCode } = req.body;
+
+    // Call the service to verify OTP
+    const result = await AuthService.verifyLoginOTPService(mobileNumber, otpCode);
+
+    res.json({
+      status: 'success',
+      data: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 const forgetPassword = catchAsync(async (req: Request, res: Response) => {
     const email = req.body.email;
@@ -146,17 +188,17 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const verifyOTP = catchAsync(async (req: Request, res: Response) => {
-    const { mobileNumber, otpCode } = req.body;
-    const result = await AuthService.verifyOTP(mobileNumber, otpCode);
+// const verifyOTP = catchAsync(async (req: Request, res: Response) => {
+//     const { mobileNumber, otpCode } = req.body;
+//     const result = await AuthService.verifyOTP(mobileNumber, otpCode);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'OTP verified successfully',
-        data: result
-    });
-});
+//     sendResponse(res, {
+//         success: true,
+//         statusCode: StatusCodes.OK,
+//         message: 'OTP verified successfully',
+//         data: result
+//     });
+// });
 
 export const AuthController = {
     // verifyMobile,
@@ -169,5 +211,8 @@ export const AuthController = {
     socialLogin,
     deleteUser,
     verifyEmail,
-    verifyOTP
+    login,
+    verifyLoginOTP,
+    
+    // verifyOTP
 };

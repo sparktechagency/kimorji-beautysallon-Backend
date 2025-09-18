@@ -6,10 +6,15 @@ import { AuthController } from './auth.controller';
 import { AuthValidation } from './auth.validation';
 const router = express.Router();
 
+// router.post(
+//     '/login',
+    
+//     AuthController.loginUser
+// );
+
 router.post(
     '/login',
-    
-    AuthController.loginUser
+    AuthController.login
 );
 
 router.post(
@@ -54,9 +59,13 @@ router.post(
 //verify phone-otp
 router.post(
     '/verify-otp',
-    AuthController.verifyOTP
+    AuthController.verifyLoginOTP
 );
-
+//verify email
+router.post(
+    '/verify-email',
+    AuthController.verifyEmail
+);
 router.delete(
     '/delete-account',
     auth(USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER, USER_ROLES.SUPER_ADMIN),
