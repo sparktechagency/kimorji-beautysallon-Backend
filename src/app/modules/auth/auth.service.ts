@@ -361,48 +361,48 @@ const loginService = async (mobileNumber: string, fcmToken: string, deviceId: st
 
 // const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
 //   const formattedNumber = formatPhoneNumber(mobileNumber);
-
-//   // Find user by mobile number
 //   const user = await User.findOne({ mobileNumber: formattedNumber });
 
 //   if (!user) {
 //     throw new AppError('User account was not found. Please create an account', 404);
 //   }
-
-//   // Log the OTP comparison and expiration check
-//   const storedOtp = user.authentication?.otpCode;  // OTP stored as a string
+//   const storedOtp = user.authentication?.otpCode;  
 //   const expireAt = user.authentication?.expireAt;
 
 //   console.log('OTP submitted by user:', otpCode);
 //   console.log('Stored OTP in DB:', storedOtp);
 //   console.log('OTP expiration time:', expireAt);
 
-//   // Check if OTP matches and is valid (not expired)
-//   // Ensure both stored OTP and submitted OTP are strings for correct comparison
-//   if (!storedOtp || storedOtp.toString() !== otpCode.toString()) {
+//   if (!storedOtp || storedOtp !== otpCode) {
 //     throw new AppError('Invalid OTP', 400);
 //   }
 
 //   const dateNow = new Date();
 //   console.log('Current time:', dateNow);
-  
-//   // Ensure that expireAt exists and compare it to the current date
+
 //   if (!expireAt || dateNow > expireAt) {
 //     throw new AppError('OTP has expired, please request a new OTP', 400);
 //   }
 
-//   // Create and return JWT token if OTP is valid
+//   if (!user.verified) {
+//     await User.findOneAndUpdate(
+//       { _id: user._id },
+//       { verified: true, 'authentication.otpCode': null, 'authentication.expireAt': null }  
+//     );
+//     console.log('User verified and OTP cleared.');
+//   }
+
 //   const payload = {
 //     id: user._id.toString(),
 //     role: user.role,
 //   };
+
 //   const accessToken = jwtHelper.createToken(
 //     { id: user._id, role: user.role },
 //     config.jwt.jwt_secret as Secret,
 //     config.jwt.jwt_expire_in as string
 //   );
 
-//   // Create refresh token
 //   const refreshToken = jwtHelper.createToken(
 //     { id: user._id, role: user.role },
 //     config.jwt.jwtRefreshSecret as Secret,
@@ -413,66 +413,58 @@ const loginService = async (mobileNumber: string, fcmToken: string, deviceId: st
 // };
 const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);
-
-  // Find user by mobile number
-  const user = await User.findOne({ mobileNumber: formattedNumber });
-
+  
+  // Make sure to select the authentication field since it's set to select: 0
+  const user = await User.findOne({ mobileNumber: formattedNumber }).select('+authentication');
+  
   if (!user) {
     throw new AppError('User account was not found. Please create an account', 404);
   }
-
-  // Log the OTP comparison and expiration check
-  const storedOtp = user.authentication?.otpCode;  // OTP stored as a string
+  
+  const storedOtp = user.authentication?.otpCode;  
   const expireAt = user.authentication?.expireAt;
-
+  
   console.log('OTP submitted by user:', otpCode);
   console.log('Stored OTP in DB:', storedOtp);
   console.log('OTP expiration time:', expireAt);
-
-  // Check if OTP matches and is valid (not expired)
+  
   if (!storedOtp || storedOtp !== otpCode) {
     throw new AppError('Invalid OTP', 400);
   }
-
+  
   const dateNow = new Date();
   console.log('Current time:', dateNow);
-
-  // Ensure that expireAt exists and compare it to the current date
+  
   if (!expireAt || dateNow > expireAt) {
     throw new AppError('OTP has expired, please request a new OTP', 400);
   }
-
-  // If the user is not verified, set the verified field to true
+  
   if (!user.verified) {
     await User.findOneAndUpdate(
       { _id: user._id },
-      { verified: true, 'authentication.otpCode': null, 'authentication.expireAt': null }  // Clear OTP and expiry after successful verification
+      { 
+        verified: true, 
+        'authentication.otpCode': null, 
+        'authentication.expireAt': null 
+      }  
     );
     console.log('User verified and OTP cleared.');
   }
-
-  // Create and return JWT token if OTP is valid
-  const payload = {
-    id: user._id.toString(),
-    role: user.role,
-  };
-
+  
   const accessToken = jwtHelper.createToken(
     { id: user._id, role: user.role },
     config.jwt.jwt_secret as Secret,
     config.jwt.jwt_expire_in as string
   );
-
-  // Create refresh token
+  
   const refreshToken = jwtHelper.createToken(
     { id: user._id, role: user.role },
     config.jwt.jwtRefreshSecret as Secret,
     config.jwt.jwtRefreshExpiresIn as string
   );
-
+  
   return { accessToken, refreshToken, user };
 };
-
 
 
 const resetPasswordToDB = async (token: string, payload: IAuthResetPassword) => {
