@@ -6,11 +6,11 @@ import { AuthController } from './auth.controller';
 import { AuthValidation } from './auth.validation';
 const router = express.Router();
 
-// router.post(
-//     '/login',
+router.post(
+    '/email-login',
     
-//     AuthController.loginUser
-// );
+    AuthController.loginUser
+);
 
 router.post(
     '/login',
