@@ -84,49 +84,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
     return { accessToken, refreshToken };
 };
 
-//mobile number login
-// const loginUserFromDB = async (phoneNumber: string, deviceToken: string) => {
-//     let isExistUser: IUser | null = await User.findOne({ mobileNumber: phoneNumber, deviceToken: deviceToken }).select("+mobileNumber");
 
-//     if (!isExistUser) {
-//         const newUser = new User({
-//             mobileNumber: phoneNumber,
-//             verified: false,  
-//             role: 'BARBER',
-//             deviceToken: deviceToken
-//         });
-
-//         await newUser.save();
-
-//         const verificationSid = await sendTwilioOTP(newUser.mobileNumber);
-//         console.log(`New user created with ID: ${newUser._id}, OTP sent with SID: ${verificationSid}`);
-
-//         return { verificationSid };
-//     }
-
-//     if (!isExistUser.verified) {
-//         const verificationSid = await sendTwilioOTP(isExistUser.mobileNumber);
-
-//         return { verificationSid };
-//     }
-//     console.log(sendTwilioOTP)
-
-//       const accessToken = jwtHelper.createToken(
-//             { id: isExistUser._id, role: isExistUser.role, mobileNumber: isExistUser.mobileNumber },
-//             config.jwt.jwt_secret as string,
-//             config.jwt.jwt_expire_in as string
-//         );
-    
-//         const refreshToken = jwtHelper.createToken(
-//             { id: isExistUser._id, role: isExistUser.role, mobileNumber: isExistUser.mobileNumber },
-//             config.jwt.jwtRefreshSecret as string,
-//             config.jwt.jwtRefreshExpiresIn as string
-//         );
-
-//     return { accessToken, refreshToken };
-// };
-
-//forget password
 const forgetPasswordToDB = async (email: string) => {
 
     const isExistUser = await User.isExistUserByEmail(email);
@@ -151,8 +109,6 @@ const forgetPasswordToDB = async (email: string) => {
     };
     await User.findOneAndUpdate({ email }, { $set: { authentication } });
 };
-
-
 
 // export const verifyOTP = async (payload: IVerifymobile) => {
 //   const { mobileNumber, otpCode } = payload;
@@ -197,6 +153,7 @@ const forgetPasswordToDB = async (email: string) => {
 // };
 
 //verify email
+
 const verifyEmailToDB = async (payload: IVerifyEmail) => {
     const { email, oneTimeCode } = payload;
     const isExistUser = await User.findOne({ email }).select('+authentication');
@@ -251,7 +208,6 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
     return { data, message };
 };
 
-
 const loginService = async (mobileNumber: string, fcmToken: string, deviceId: string, deviceType: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);
 
@@ -263,7 +219,7 @@ const loginService = async (mobileNumber: string, fcmToken: string, deviceId: st
     const newUser = new User({
       mobileNumber: formattedNumber,
       verified: false,
-      role: 'BARBER',
+      role:USER_ROLES.CUSTOMER || USER_ROLES.BARBER,
     });
 
     await newUser.save();
@@ -336,7 +292,6 @@ const loginService = async (mobileNumber: string, fcmToken: string, deviceId: st
     }
   }
 
-  // Use the correct user object for token creation
   const user = existingUser || (await User.findOne({ _id: userId }));
 
   if (!user) {
@@ -359,62 +314,10 @@ const loginService = async (mobileNumber: string, fcmToken: string, deviceId: st
   return { message, userId, accessToken, refreshToken };
 };
 
-// const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
-//   const formattedNumber = formatPhoneNumber(mobileNumber);
-//   const user = await User.findOne({ mobileNumber: formattedNumber });
 
-//   if (!user) {
-//     throw new AppError('User account was not found. Please create an account', 404);
-//   }
-//   const storedOtp = user.authentication?.otpCode;  
-//   const expireAt = user.authentication?.expireAt;
-
-//   console.log('OTP submitted by user:', otpCode);
-//   console.log('Stored OTP in DB:', storedOtp);
-//   console.log('OTP expiration time:', expireAt);
-
-//   if (!storedOtp || storedOtp !== otpCode) {
-//     throw new AppError('Invalid OTP', 400);
-//   }
-
-//   const dateNow = new Date();
-//   console.log('Current time:', dateNow);
-
-//   if (!expireAt || dateNow > expireAt) {
-//     throw new AppError('OTP has expired, please request a new OTP', 400);
-//   }
-
-//   if (!user.verified) {
-//     await User.findOneAndUpdate(
-//       { _id: user._id },
-//       { verified: true, 'authentication.otpCode': null, 'authentication.expireAt': null }  
-//     );
-//     console.log('User verified and OTP cleared.');
-//   }
-
-//   const payload = {
-//     id: user._id.toString(),
-//     role: user.role,
-//   };
-
-//   const accessToken = jwtHelper.createToken(
-//     { id: user._id, role: user.role },
-//     config.jwt.jwt_secret as Secret,
-//     config.jwt.jwt_expire_in as string
-//   );
-
-//   const refreshToken = jwtHelper.createToken(
-//     { id: user._id, role: user.role },
-//     config.jwt.jwtRefreshSecret as Secret,
-//     config.jwt.jwtRefreshExpiresIn as string
-//   );
-
-//   return { accessToken, refreshToken, user };
-// };
 const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);
   
-  // Make sure to select the authentication field since it's set to select: 0
   const user = await User.findOne({ mobileNumber: formattedNumber }).select('+authentication');
   
   if (!user) {
@@ -466,7 +369,6 @@ const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
   return { accessToken, refreshToken, user };
 };
 
-
 const resetPasswordToDB = async (token: string, payload: IAuthResetPassword) => {
 
     const { newPassword, confirmPassword } = payload;
@@ -509,6 +411,7 @@ const resetPasswordToDB = async (token: string, payload: IAuthResetPassword) => 
         { new: true }
     );
 };
+
 
 const changePasswordToDB = async (user: JwtPayload, payload: IChangePassword) => {
 

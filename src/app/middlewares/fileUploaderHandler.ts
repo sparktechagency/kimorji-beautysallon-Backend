@@ -29,6 +29,15 @@ const fileUploadHandler = () => {
                 case 'image':
                     uploadDir = path.join(baseUploadDir, 'images');
                 break;
+                case 'tradeLicences':
+                    uploadDir = path.join(baseUploadDir, 'tradeLicences');
+                break;
+                case 'proofOwnerId':
+                    uploadDir = path.join(baseUploadDir, 'proofOwnerId');
+                break;
+                case 'sallonPhoto':
+                    uploadDir = path.join(baseUploadDir, 'sallonPhoto');
+                break;
                 default:
                     throw new ApiError(StatusCodes.BAD_REQUEST, 'File is not supported');
             }
@@ -54,7 +63,7 @@ const fileUploadHandler = () => {
     const filterFilter = (req: Request, file: any, cb: FileFilterCallback) => {
 
         // console.log("file handler",file)
-        if (file.fieldname === 'image') {
+        if (file.fieldname === 'image' || file.fieldname === 'tradeLicences' || file.fieldname === 'proofOwnerId' || file.fieldname === 'sallonPhoto') {
             if (
                 file.mimetype === 'image/jpeg' ||
                 file.mimetype === 'image/png' ||
@@ -70,7 +79,13 @@ const fileUploadHandler = () => {
     };
 
     const upload = multer({ storage: storage, fileFilter: filterFilter})
-    .fields([{ name: 'image', maxCount: 30 } ]);
+    .fields([
+        { name: 'image', maxCount: 30 },
+        { name: 'tradeLicences', maxCount: 15 },
+        { name: 'proofOwnerId', maxCount: 15 },
+        { name: 'sallonPhoto', maxCount: 15 },
+
+     ]);
     return upload;
 
 };

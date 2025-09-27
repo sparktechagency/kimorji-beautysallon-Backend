@@ -3,7 +3,14 @@ import path from 'path';
 
 const unlinkFile = (file: string) => {
     const filePath = path.join('uploads', file);
-    if (fs.existsSync(filePath)) {
+
+    if (!fs.existsSync(filePath)) return;
+
+    const stats = fs.statSync(filePath);
+
+    if (stats.isDirectory()) {
+        fs.rmSync(filePath, { recursive: true, force: true });
+    } else {
         fs.unlinkSync(filePath);
     }
 };

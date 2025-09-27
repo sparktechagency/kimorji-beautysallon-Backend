@@ -25,8 +25,8 @@ const userSchema = new Schema<IUser, UserModal>(
 
     email: {
       type: String,
-      required: false,  // Email is not required anymore
-      unique: false,    // Removed unique constraint on email
+      required: false, 
+      unique: false,    
       immutable: true,
       lowercase: true,
     },
@@ -58,7 +58,26 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       default: 'https://res.cloudinary.com/ddqovbzxy/image/upload/v1736572642/avatar_ziy9mp.jpg',
     },
+    tradeLicences: {
+      type: String,
+      required:false,
+      default:""
+    },
+    proofOwnerId: {
+      type: String,
+      required:false,
+      default: ""
+    },
+    sallonPhoto:{
+      type: String,
+      required:false,
+      default:""
 
+    },
+    isUpdate: {
+      type:Boolean,
+      default: false,
+    },
     verified: {
       type: Boolean,
       default: false,
@@ -156,13 +175,11 @@ userSchema.statics.isMatchPassword = async (password: string, hashPassword: stri
     return await bcrypt.compare(password, hashPassword);
 };
 
-// Single pre-save middleware that handles all validation logic
+// Updated pre-save middleware section only
 userSchema.pre('save', async function (next) {
     const user = this as IUser;
 
-    // Only check for duplicates when creating a new user (not when updating)
     if (this.isNew) {
-        // Check if mobile number already exists (only for new users)
         if (user.mobileNumber) {
             const existingUserByMobile = await User.findOne({ mobileNumber: user.mobileNumber });
             if (existingUserByMobile) {
@@ -170,7 +187,6 @@ userSchema.pre('save', async function (next) {
             }
         }
 
-        // Check if email already exists (only for new users)
         if (user.email) {
             const existingUserByEmail = await User.findOne({ email: user.email });
             if (existingUserByEmail) {
@@ -179,9 +195,8 @@ userSchema.pre('save', async function (next) {
         }
     }
 
-    // Set default values for BARBER role
-    if (user.role === USER_ROLES.BARBER) {
-        // if role is BARBER the accountInformation status initially set as false
+
+    if (user.role === USER_ROLES.BARBER || user.role === USER_ROLES.CUSTOMER) {
         if (!user.accountInformation) {
             user.accountInformation = {
                 status: false
@@ -202,13 +217,18 @@ userSchema.pre('save', async function (next) {
         }
     }
 
-    // Password hash (uncomment if needed)
-    // if(!user.appId && user.password){
-    //     user.password = await bcrypt.hash(this.password, Number(config.bcrypt_salt_rounds));
-    // }
+    // Apply isUpdate logic to all users (not just BARBER)
+    const hasTradelicences = user.tradeLicences && user.tradeLicences.trim() !== '';
+    const hasProofOwnerId = user.proofOwnerId && user.proofOwnerId.trim() !== '';
+    const hasSallonPhoto = user.sallonPhoto && user.sallonPhoto.trim() !== '';
+    
+    // Only set isUpdate to true when ALL three fields have values
+    user.isUpdate = !!(hasTradelicences && hasProofOwnerId && hasSallonPhoto);
+
     
     next();
 });
+
 
 export const User = model<IUser, UserModal>("User", userSchema);
 

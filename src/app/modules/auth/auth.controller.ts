@@ -47,18 +47,6 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-// //mobile number login
-// const loginUser = catchAsync(async (req: Request, res: Response) => {
-//     const { phoneNumber } = req.body; // We are using phoneNumber to login
-//     const result = await AuthService.loginUserFromDB(phoneNumber, req.body.deviceToken);
-
-//     sendResponse(res, {
-//         success: true,
-//         statusCode: StatusCodes.OK,
-//         message: 'OTP sent successfully, please verify to login.',
-//         data: result
-//     });
-// });
 
  const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

@@ -45,14 +45,30 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 //update profile
 const updateProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
-
-    let profile;
+       
+       
+        
+    let profile,tradeLicences, proofOwnerId, sallonPhoto;
     if (req.files && 'image' in req.files && req.files.image[0]) {
         profile = `/images/${req.files.image[0].filename}`;
     }
+    
+    if (req.files && 'tradeLicences' in req.files && req.files.tradeLicences[0]) {
+    tradeLicences = `/tradeLicences/${req.files.tradeLicences[0].filename}`;
+    }
+
+    if (req.files && 'proofOwnerId' in req.files && req.files.proofOwnerId[0]) {
+        proofOwnerId = `/proofOwnerIds/${req.files.proofOwnerId[0].filename}`
+    }
+    if (req.files && 'sallonPhoto' in req.files && req.files.sallonPhoto[0]) {
+        sallonPhoto = `/sallonPhotos/${req.files.sallonPhoto[0].filename}`
+     }
 
     const data = {
         profile,
+        tradeLicences,
+        proofOwnerId,
+        sallonPhoto,
         ...req.body,
     };
     const result = await UserService.updateProfileToDB(user, data);
