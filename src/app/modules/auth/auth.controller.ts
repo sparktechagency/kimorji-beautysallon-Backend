@@ -50,14 +50,14 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 
  const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { mobileNumber, fcmToken, deviceId, deviceType = 'android' } = req.body;
+    const { mobileNumber, fcmToken, deviceId, role, deviceType } = req.body;
 
     if (!mobileNumber) {
       throw new AppError("Mobile number is required", 400);
     }
 
     // Call the service method for login or registration
-    const result = await AuthService.loginService(mobileNumber, fcmToken, deviceId, deviceType);
+    const result = await AuthService.loginService(mobileNumber, fcmToken, deviceId, role, deviceType);
 
     res.status(200).json({
       status: "success",

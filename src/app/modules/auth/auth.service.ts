@@ -208,7 +208,7 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
     return { data, message };
 };
 
-const loginService = async (mobileNumber: string, fcmToken: string, deviceId: string, deviceType: string) => {
+const loginService = async (mobileNumber: string, fcmToken: string, deviceId: string, deviceType: string, role: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);
 
   let existingUser = await User.findOne({ mobileNumber: formattedNumber });
@@ -219,7 +219,7 @@ const loginService = async (mobileNumber: string, fcmToken: string, deviceId: st
     const newUser = new User({
       mobileNumber: formattedNumber,
       verified: false,
-      role:USER_ROLES.CUSTOMER || USER_ROLES.BARBER,
+      role: USER_ROLES.CUSTOMER && USER_ROLES.BARBER
     });
 
     await newUser.save();

@@ -1,127 +1,106 @@
-import { StatusCodes } from "http-status-codes";
-import ApiError from "../../../errors/ApiError";
-import { IService } from "./service.interface";
-import { Service } from "./service.model";
-import mongoose, { UpdateWriteOpResult } from "mongoose";
-import { JwtPayload } from "jsonwebtoken";
-import unlinkFile from "../../../shared/unlinkFile";
-import { User } from "../user/user.model";
+import httpStatus from 'http-status-codes';
+import { IService } from './service.interface';
+import { Service } from './service.model';
+import ApiError from '../../../errors/ApiError';
+import fs from 'fs';
+import { User } from '../user/user.model';
+import path from 'path';
+import { logger } from '../../../shared/logger';
 
-const createServiceToDB = async (payload: IService[]): Promise<IService[] | null> => {
 
-    if (!payload || payload.length === 0) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "No services provided");
+// Create a new service
+const createService = async (payload: IService): Promise<IService> => {
+  logger.info('Starting createService in service layer');
+  logger.debug(`Service payload: ${JSON.stringify(payload)}`);
+
+  // Validate barber existence
+  if (payload.barber) {
+    logger.info(`Validating barber ID: ${payload.barber}`);
+    const barberExists = await User.findById(payload.barber).select('_id');
+    if (!barberExists) {
+      logger.error(`Barber not found: ${payload.barber}`);
+      throw new ApiError(httpStatus.NOT_FOUND, 'Barber not found');
     }
+  } else {
+    logger.error('Barber ID missing in payload');
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Barber ID is required');
+  }
 
-    // retrieved existing services based on the payload
-    const existingServices = await Service.find({
-        $or: payload.map(service => ({
-            title: service.title,
-            category: service.category,
-            barber: service.barber
-        }))
-    });
-
-    // Filter payload to exclude existing services
-    const filteredPayload = payload.filter(service =>
-        !existingServices.some(existing =>
-            existing.title.toString() === service.title.toString() &&
-            existing.category.toString() === service.category.toString() &&
-            existing.barber.toString() === service.barber.toString()
-        )
-    );
-
-    // Delete existing services
-    if (existingServices.length > 0) {
-        await Service.deleteMany({
-            $or: existingServices?.map(service => ({
-                title: service.title,
-                category: service.category,
-                barber: service.barber
-            }))
-        });
-    }
-
-    // Step 4: If no new services to insert, return an error
-    if (filteredPayload.length === 0) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "All provided services already exist");
-    }
-
-    // Insert the new services
-    const insertedServices = await Service.insertMany(filteredPayload);
-    if (!insertedServices || insertedServices.length === 0) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to create services");
-    }
-
-    // Return the newly created services
-    return insertedServices;
+  try {
+    const service = await Service.create(payload);
+    logger.info(`Service created with ID: ${service._id}`);
+    return service.populate('category title barber');
+  } catch (error) {
+    logger.error(`Database error creating service: ${error}`);
+    throw error;
+  }
 };
 
 
-const updateServiceToDB = async (id: string, payload: IService): Promise<IService | null> => {
+// Get all services
+const getAllServices = async (): Promise<IService[]> => {
+  const services = await Service.find()
+    .populate('category')
+    .populate('title')
+    .populate('barber');
+  return services;
+};
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Service Object ID")
+// Update a service
+const updateService = async (id: string, payload: Partial<IService>): Promise<IService | null> => {
+  const service = await Service.findById(id);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service not found');
+  }
+
+  // Validate barber if provided
+  if (payload.barber) {
+    const barberExists = await User.findById(payload.barber);
+    if (!barberExists) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Barber not found');
     }
+  }
 
-    const isExistService = await Service.findById(id);
-    if (isExistService?.image?.startsWith("/images")) {
-        unlinkFile(isExistService.image as string);
+  // If updating with new image, delete old image
+  if (payload.image && service.image && service.image !== payload.image) {
+    const oldImagePath = path.join(process.cwd(), service.image.toString());
+    if (fs.existsSync(oldImagePath)) {
+      fs.unlinkSync(oldImagePath);
     }
+  }
 
-    const result = await Service.findByIdAndUpdate(
-        { _id: id },
-        payload,
-        { new: true }
-    );
+  const updatedService = await Service.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  })
+    .populate('category')
+    .populate('title')
+    .populate('barber');
 
-    if (!result) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to Update Service")
+  return updatedService;
+};
+
+// Delete a service
+const deleteService = async (id: string): Promise<void> => {
+  const service = await Service.findById(id);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service not found');
+  }
+
+  // Delete associated image
+  if (service.image) {
+    const imagePath = path.join(process.cwd(), service.image.toString());
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
     }
+  }
 
-    return result;
-}
-
-
-const getServiceForBarberFromDB = async (user: JwtPayload, category: string): Promise<IService[]> => {
-
-    if (category && !mongoose.Types.ObjectId.isValid(category)) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Category ID")
-    }
-
-    const result = await Service.find({ barber: user.id, category: category })
-        .populate("title", "title")
-        .lean();
-    return result;
-}
-
-// hold service
-const holdServiceFromDB = async (user: JwtPayload, password: string): Promise<UpdateWriteOpResult> => {
-
-
-    const isExistUser = await User.findById(user.id).select('+password');
-    if (!isExistUser) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
-    }
-
-    //check match password
-    if (password && !(await User.isMatchPassword(password, isExistUser.password))) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect');
-    }
-
-    const result = await Service.updateMany(
-        { barber: user.id },
-        { status: "Inactive" },
-        { new: true }
-    );
-
-    return result;
-}
-
+  await Service.findByIdAndDelete(id);
+};
 
 export const ServiceService = {
-    createServiceToDB,
-    updateServiceToDB,
-    getServiceForBarberFromDB,
-    holdServiceFromDB
-}
+  createService,
+  getAllServices,
+  updateService,
+  deleteService,
+};
