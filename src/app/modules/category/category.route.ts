@@ -41,6 +41,10 @@ router.get("/barber",
     CategoryController.getCategoryForBarber
 )
 
+router.get("/idBySubCategory/:id",
+    CategoryController.getAllSubCategories
+)
+
 router.get("/admin-category",
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     CategoryController.adminGetCategories

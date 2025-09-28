@@ -6,7 +6,24 @@ import fs from 'fs';
 import { User } from '../user/user.model';
 import path from 'path';
 import { logger } from '../../../shared/logger';
+import { SubCategory } from '../subCategory/subCategory.model';
 
+interface PaginationOptions {
+  page: number;
+  limit: number;
+  searchTerm: string;
+  barberId: string;
+}
+
+interface PaginatedResult {
+  services: IService[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPage: number;
+  };
+}
 
 // Create a new service
 const createService = async (payload: IService): Promise<IService> => {
@@ -38,12 +55,74 @@ const createService = async (payload: IService): Promise<IService> => {
 
 
 // Get all services
-const getAllServices = async (): Promise<IService[]> => {
+const getAllServices = async (pagination: { page: number, totalPage: number, limit: number, total: number }): Promise<{ services: IService[], pagination: { page: number, limit: number, total: number, totalPage: number } }> => {
   const services = await Service.find()
     .populate('category')
     .populate('title')
     .populate('barber');
-  return services;
+
+  // Use the pagination values from the argument
+  const { page, limit, total, totalPage } = pagination;
+
+  return {
+    services,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPage,
+    },
+  };
+};
+
+
+// Get all services with pagination and search
+const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: PaginationOptions): Promise<PaginatedResult> => {
+  logger.info(`Starting getAllServices: page=${page}, limit=${limit}, searchTerm=${searchTerm}, barberId=${barberId}`);
+
+  // Build query
+  const query: any = { barber: barberId }; // Filter by authenticated barber
+  if (searchTerm) {
+    const subCategoryIds = await SubCategory.find({
+      title: { $regex: searchTerm, $options: 'i' }
+    }).select('_id');
+    
+    query.$or = [
+      { serviceType: { $regex: searchTerm, $options: 'i' } },
+      { description: { $regex: searchTerm, $options: 'i' } },
+      { title: { $in: subCategoryIds } },
+    ];
+  }
+
+  try {
+    // Calculate pagination
+    const total = await Service.countDocuments(query);
+    const totalPage = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    // Fetch services
+    const services = await Service.find(query)
+      .populate('category')
+      .populate('title')
+      .populate('barber')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }); // Sort by newest first
+
+    logger.info(`Retrieved ${services.length} services, total: ${total}`);
+    return {
+      services,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPage,
+      },
+    };
+  } catch (error) {
+    logger.error(`Database error retrieving services: ${error}`);
+    throw error;
+  }
 };
 
 // Update a service
@@ -103,4 +182,5 @@ export const ServiceService = {
   getAllServices,
   updateService,
   deleteService,
+  getAllServicesbarber,
 };

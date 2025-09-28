@@ -61,11 +61,26 @@ const createService = catchAsync(async (req: Request, res: Response) => {
 
 // Get all services
 const getAllServices = catchAsync(async (req: Request, res: Response) => {
-  const services = await ServiceService.getAllServices();
+  const services = await ServiceService.getAllServices( { page: 1, totalPage: 0, limit: 10, total: 0 });
   res.status(httpStatus.OK).json({
     success: true,
     message: 'Services retrieved successfully',
     data: services,
+    
+  });
+});
+
+const getAllServicesbarber = catchAsync(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const total = 0; 
+  const totalPage = 0; 
+  const services = await ServiceService.getAllServices({ page, totalPage, limit, total });
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Services retrieved successfully',
+    data: services,
+    
   });
 });
 
@@ -116,6 +131,7 @@ const deleteService = catchAsync(async (req: Request, res: Response) => {
 export const ServiceController = {
   createService,
   getAllServices,
+  getAllServicesbarber,
   updateService,
   deleteService,
 };

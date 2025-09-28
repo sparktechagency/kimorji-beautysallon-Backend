@@ -8,6 +8,8 @@ import mongoose from 'mongoose'
 import { JwtPayload } from 'jsonwebtoken'
 import { SubCategory } from '../subCategory/subCategory.model'
 import { Service } from '../service/service.model'
+import { logger } from '../../../shared/logger'
+import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface'
 
 const createCategoryToDB = async (payload: ICategory) => {
   const { name, image } = payload;
@@ -31,6 +33,56 @@ const getCategoriesFromDB = async (): Promise<ICategory[]> => {
   const result = await Category.find({})
   return result;
 }
+
+ const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: PaginationOptions): Promise<PaginatedResult> => {
+  logger.info(`Starting getAllSubCategories: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}`);
+
+  // Build query
+  const query: any = {};
+  if (categoryId) {
+    if (!categoryId.match(/^[0-9a-fA-F]{24}$/)) {
+      logger.error(`Invalid category ID format: ${categoryId}`);
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid category ID format');
+    }
+    const categoryExists = await Category.findById(categoryId).select('_id');
+    if (!categoryExists) {
+      logger.error(`Category not found: ${categoryId}`);
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Category not found');
+    }
+    query.category = categoryId;
+  }
+  if (searchTerm) {
+    query.title = { $regex: searchTerm, $options: 'i' };
+  }
+
+  try {
+    // Calculate pagination
+    const total = await SubCategory.countDocuments(query);
+    const totalPage = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    // Fetch subcategories
+    const subCategories = await SubCategory.find(query)
+      .populate('category')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }); // Sort by newest first
+
+    logger.info(`Retrieved ${subCategories.length} subcategories, total: ${total}`);
+    return {
+      subCategories,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPage,
+      },
+    };
+  } catch (error) {
+    logger.error(`Database error retrieving subcategories: ${error}`);
+    throw error;
+  }
+};
 
 const adminCategoriesFromDB = async (): Promise<ICategory[]> => {
   const result = await Category.find({}).lean();
@@ -116,5 +168,6 @@ export const CategoryService = {
   updateCategoryToDB,
   deleteCategoryToDB,
   getCategoryForBarberFromDB,
-  adminCategoriesFromDB
+  adminCategoriesFromDB,
+  getAllSubCategories
 }
