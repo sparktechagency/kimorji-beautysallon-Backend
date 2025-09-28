@@ -26,6 +26,14 @@ const serviceSchema = new Schema<IService, ServiceModel>(
             type: String,
             default: "https://res.cloudinary.com/ddqovbzxy/image/upload/v1734498548/Barbar_Me_u4jj7s.png"
         },
+        transportFee: {
+            type: Number,
+            required: false
+        },
+        timeSchedule: {
+            type: String,
+            required: false
+        },
         price: {
             type: Number,
             required: false

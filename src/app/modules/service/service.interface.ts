@@ -8,6 +8,8 @@ export type IService = {
     title: Types.ObjectId;
     category: Types.ObjectId;
     image: String;
+    transportFee: Number;
+    timeSchedule: String;
     price: Number;
     duration: String;
     description: String;
