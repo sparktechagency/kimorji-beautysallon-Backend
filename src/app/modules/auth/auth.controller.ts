@@ -5,6 +5,7 @@ import sendResponse from '../../../shared/sendResponse';
 import { AuthService } from './auth.service';
 import { twilioClient, twilioServiceSid } from '../../../helpers/twillo';
 import { AppError } from '../../../errors/error.app';
+import { USER_ROLES } from '../../../enums/user';
 // const verifyMobile = catchAsync(async (req: Request, res: Response) => {
 //   const { mobileNumber, otpCode } = req.body;
 
@@ -48,28 +49,59 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
- const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//  const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//   try {
+//     const { mobileNumber, fcmToken, deviceId, role, deviceType } = req.body;
+
+//     if (!mobileNumber) {
+//       throw new AppError("Mobile number is required", 400);
+//     }
+
+//     // Call the service method for login or registration
+//     const result = await AuthService.loginService(mobileNumber, fcmToken, deviceId, role, deviceType);
+
+//     res.status(200).json({
+//       status: "success",
+//       message: result.message,
+//       userId: result.userId
+//     });
+
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { mobileNumber, fcmToken, deviceId, role, deviceType } = req.body;
+    const { mobileNumber, deviceToken, deviceId, role, deviceType } = req.body;
 
     if (!mobileNumber) {
       throw new AppError("Mobile number is required", 400);
     }
 
-    // Call the service method for login or registration
-    const result = await AuthService.loginService(mobileNumber, fcmToken, deviceId, role, deviceType);
+    const validRoles = [USER_ROLES.CUSTOMER, USER_ROLES.BARBER];
+    if (!role || !validRoles.includes(role as USER_ROLES)) {
+      throw new AppError(`Invalid role. Must be either ${USER_ROLES.CUSTOMER} or ${USER_ROLES.BARBER}`, 400);
+    }
+
+    const result = await AuthService.loginService(
+      mobileNumber,
+      deviceToken || '',
+      deviceId || '',
+      deviceType || '',
+      role as USER_ROLES 
+    );
 
     res.status(200).json({
       status: "success",
       message: result.message,
-      userId: result.userId
+      userId: result.userId,
+    //   accessToken: result.accessToken,
+    //   refreshToken: result.refreshToken
     });
-
   } catch (error) {
     next(error);
   }
 };
-
  const verifyLoginOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mobileNumber, otpCode } = req.body;

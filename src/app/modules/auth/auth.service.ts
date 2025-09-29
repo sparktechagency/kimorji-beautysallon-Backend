@@ -208,112 +208,231 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
     return { data, message };
 };
 
-const loginService = async (mobileNumber: string, fcmToken: string, deviceId: string, deviceType: string, role: string) => {
-  const formattedNumber = formatPhoneNumber(mobileNumber);
+// const loginService = async (mobileNumber: string, fcmToken: string, deviceId: string, deviceType: string, role: string) => {
+//   const formattedNumber = formatPhoneNumber(mobileNumber);
 
-  let existingUser = await User.findOne({ mobileNumber: formattedNumber });
-  let message = '';
-  let userId = '';
+//   let existingUser = await User.findOne({ mobileNumber: formattedNumber });
+//   let message = '';
+//   let userId = '';
 
-  if (!existingUser) {
-    const newUser = new User({
-      mobileNumber: formattedNumber,
-      verified: false,
-      role: USER_ROLES.CUSTOMER && USER_ROLES.BARBER
-    });
+//   if (!existingUser) {
+//     const newUser = new User({
+//       mobileNumber: formattedNumber,
+//       verified: false,
+//       role: USER_ROLES.CUSTOMER && USER_ROLES.BARBER
+//     });
 
-    await newUser.save();
-    message = "Please verify your registration OTP and add this number";
-    userId = newUser._id.toString();
+//     await newUser.save();
+//     message = "Please verify your registration OTP and add this number";
+//     userId = newUser._id.toString();
 
-    const otpCode = generateOTP();
-    console.log('Generated OTP for registration:', otpCode); 
+//     const otpCode = generateOTP();
+//     console.log('Generated OTP for registration:', otpCode); 
 
-    await sendTwilioOTP(formattedNumber, otpCode.toString());
+//     await sendTwilioOTP(formattedNumber, otpCode.toString());
 
-    const authentication = {
-      otpCode: otpCode.toString(),
-      expireAt: new Date(Date.now() + 3 * 60000), 
-    };
+//     const authentication = {
+//       otpCode: otpCode.toString(),
+//       expireAt: new Date(Date.now() + 3 * 60000), 
+//     };
 
-    console.log('Saving OTP and expiration time:', authentication);
+//     console.log('Saving OTP and expiration time:', authentication);
 
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: newUser._id },
-      { $set: { authentication } },
-      { new: true } 
-    );
+//     const updatedUser = await User.findOneAndUpdate(
+//       { _id: newUser._id },
+//       { $set: { authentication } },
+//       { new: true } 
+//     );
 
-    console.log('User after saving OTP:', updatedUser?.authentication);  
-  } else {
-    message = "Please verify your login OTP";
-    userId = existingUser._id.toString();
+//     console.log('User after saving OTP:', updatedUser?.authentication);  
+//   } else {
+//     message = "Please verify your login OTP";
+//     userId = existingUser._id.toString();
 
-    const otpCode = generateOTP(); 
-    console.log('Generated OTP for login:', otpCode); 
+//     const otpCode = generateOTP(); 
+//     console.log('Generated OTP for login:', otpCode); 
 
-    await sendTwilioOTP(formattedNumber, otpCode.toString());
+//     await sendTwilioOTP(formattedNumber, otpCode.toString());
 
-    const authentication = {
-      otpCode: otpCode.toString(),
-      expireAt: new Date(Date.now() + 3 * 60000), 
-    };
+//     const authentication = {
+//       otpCode: otpCode.toString(),
+//       expireAt: new Date(Date.now() + 3 * 60000), 
+//     };
 
-    console.log('Saving OTP and expiration time:', authentication);
+//     console.log('Saving OTP and expiration time:', authentication);
 
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: existingUser._id },
-      { $set: { authentication } },
-      { new: true } 
-    );
+//     const updatedUser = await User.findOneAndUpdate(
+//       { _id: existingUser._id },
+//       { $set: { authentication } },
+//       { new: true } 
+//     );
 
-    console.log('User after saving OTP:', updatedUser?.authentication); 
-  }
+//     console.log('User after saving OTP:', updatedUser?.authentication); 
+//   }
 
 
 
-  if (fcmToken && deviceId) {
-    const existingToken = await DeviceToken.findOne({
-      userId: existingUser?._id,
-      deviceId: deviceId
-    });
+//   if (fcmToken && deviceId) {
+//     const existingToken = await DeviceToken.findOne({
+//       userId: existingUser?._id,
+//       deviceId: deviceId
+//     });
 
-    if (existingToken) {
-      existingToken.fcmToken = fcmToken;
-      existingToken.deviceType = deviceType;
-      await existingToken.save();
-    } else {
-      await DeviceToken.create({
-        userId: existingUser?._id,
-        fcmToken,
-        deviceId,
-        deviceType
-      });
-    }
-  }
+//     if (existingToken) {
+//       existingToken.fcmToken = fcmToken;
+//       existingToken.deviceType = deviceType;
+//       await existingToken.save();
+//     } else {
+//       await DeviceToken.create({
+//         userId: existingUser?._id,
+//         fcmToken,
+//         deviceId,
+//         deviceType
+//       });
+//     }
+//   }
 
-  const user = existingUser || (await User.findOne({ _id: userId }));
+//   const user = existingUser || (await User.findOne({ _id: userId }));
 
-  if (!user) {
-    throw new AppError('User not found after registration/login process', 404);
-  }
+//   if (!user) {
+//     throw new AppError('User not found after registration/login process', 404);
+//   }
 
-  const accessToken = jwtHelper.createToken(
-    { id: user._id, role: user.role },
-    config.jwt.jwt_secret as Secret,
-    config.jwt.jwt_expire_in as string
-  );
+//   const accessToken = jwtHelper.createToken(
+//     { id: user._id, role: user.role },
+//     config.jwt.jwt_secret as Secret,
+//     config.jwt.jwt_expire_in as string
+//   );
 
-  // Create refresh token
-  const refreshToken = jwtHelper.createToken(
-    { id: user._id, role: user.role },
-    config.jwt.jwtRefreshSecret as Secret,
-    config.jwt.jwtRefreshExpiresIn as string
-  );
+//   // Create refresh token
+//   const refreshToken = jwtHelper.createToken(
+//     { id: user._id, role: user.role },
+//     config.jwt.jwtRefreshSecret as Secret,
+//     config.jwt.jwtRefreshExpiresIn as string
+//   );
 
-  return { message, userId, accessToken, refreshToken };
-};
+//   return { message, userId, accessToken, refreshToken };
+// };
 
+const loginService = async (
+     mobileNumber: string,
+     fcmToken: string,
+     deviceId: string,
+     deviceType: string,
+     role: USER_ROLES
+   ) => {
+     // Validate role
+     const validRoles = [USER_ROLES.CUSTOMER, USER_ROLES.BARBER];
+     if (!validRoles.includes(role)) {
+       throw new AppError(`Invalid role. Must be either ${USER_ROLES.CUSTOMER} or ${USER_ROLES.BARBER}`, 400);
+     }
+
+     const formattedNumber = formatPhoneNumber(mobileNumber);
+
+     let existingUser = await User.findOne({ mobileNumber: formattedNumber });
+     let message = '';
+     let userId = '';
+
+     if (!existingUser) {
+       const newUser = new User({
+         mobileNumber: formattedNumber,
+         verified: false,
+         role: role
+       });
+
+       await newUser.save();
+       message = "Please verify your registration OTP and add this number";
+       userId = newUser._id.toString();
+
+       const otpCode = generateOTP();
+       console.log('Generated OTP for registration:', otpCode); 
+
+       await sendTwilioOTP(formattedNumber, otpCode.toString());
+
+       const authentication = {
+         otpCode: otpCode.toString(),
+         expireAt: new Date(Date.now() + 3 * 60000), 
+       };
+
+       console.log('Saving OTP and expiration time:', authentication);
+
+       const updatedUser = await User.findOneAndUpdate(
+         { _id: newUser._id },
+         { $set: { authentication } },
+         { new: true } 
+       );
+
+       console.log('User after saving OTP:', updatedUser?.authentication);  
+     } else {
+       // Check if existing user's role matches the provided role
+       if (existingUser.role !== role) {
+         throw new AppError(`User is registered as ${existingUser.role}, cannot login as ${role}`, 403);
+       }
+
+       message = "Please verify your login OTP";
+       userId = existingUser._id.toString();
+
+       const otpCode = generateOTP(); 
+       console.log('Generated OTP for login:', otpCode); 
+
+       await sendTwilioOTP(formattedNumber, otpCode.toString());
+
+       const authentication = {
+         otpCode: otpCode.toString(),
+         expireAt: new Date(Date.now() + 3 * 60000), 
+       };
+
+       console.log('Saving OTP and expiration time:', authentication);
+
+       const updatedUser = await User.findOneAndUpdate(
+         { _id: existingUser._id },
+         { $set: { authentication } },
+         { new: true } 
+       );
+
+       console.log('User after saving OTP:', updatedUser?.authentication); 
+     }
+
+     if (fcmToken && deviceId) {
+       const existingToken = await DeviceToken.findOne({
+         userId: existingUser?._id || userId,
+         deviceId: deviceId
+       });
+
+       if (existingToken) {
+         existingToken.fcmToken = fcmToken;
+         existingToken.deviceType = deviceType;
+         await existingToken.save();
+       } else {
+         await DeviceToken.create({
+           userId: existingUser?._id || userId,
+           fcmToken,
+           deviceId,
+           deviceType
+         });
+       }
+     }
+
+     const user = existingUser || (await User.findOne({ _id: userId }));
+
+     if (!user) {
+       throw new AppError('User not found after registration/login process', 404);
+     }
+
+     const accessToken = jwtHelper.createToken(
+       { id: user._id, role: user.role },
+       config.jwt.jwt_secret as Secret,
+       config.jwt.jwt_expire_in as string
+     );
+
+     const refreshToken = jwtHelper.createToken(
+       { id: user._id, role: user.role },
+       config.jwt.jwtRefreshSecret as Secret,
+       config.jwt.jwtRefreshExpiresIn as string
+     );
+
+     return { message, userId, accessToken, refreshToken };
+   };
 
 const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);
