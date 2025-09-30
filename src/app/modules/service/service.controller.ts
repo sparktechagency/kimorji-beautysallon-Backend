@@ -33,14 +33,35 @@ const createService = catchAsync(async (req: Request, res: Response) => {
     logger.debug(`Request body: ${JSON.stringify(req.body)}`);
     logger.debug(`Uploaded files: ${JSON.stringify(req.files)}`);
 
-    const serviceData = {
-      ...req.body,
-      barber, // Add barber ID from req.user
-      image: req.files && 'image' in req.files && req.files['image'][0]
-        ? `/uploads/images/${req.files['image'][0].filename}`
-        : undefined,
-    };
+    // const serviceData = {
+    //   ...req.body,
+    //   barber, // Add barber ID from req.user
+    //   image: req.files && 'image' in req.files && req.files['image'][0]
+    //     ? `/uploads/images/${req.files['image'][0].filename}`
+    //     : undefined,
+    // };
+let parsedDailySchedule: any = undefined;
+if (req.body?.dailySchedule && typeof req.body.dailySchedule === 'string') {
+  try {
+    parsedDailySchedule = JSON.parse(req.body.dailySchedule);
+  } catch (err) {
+    logger.error(`Invalid dailySchedule JSON: ${(err as Error).message}`);
+    return res.status(httpStatus.BAD_REQUEST).json({
+      success: false,
+      message: 'Invalid dailySchedule JSON format',
+    });
+  }
+}
 
+const serviceData = {
+  ...req.body,
+  // prefer parsed JSON if provided
+  dailySchedule: parsedDailySchedule ?? req.body.dailySchedule,
+  barber,
+  image: req.files && 'image' in req.files && req.files['image'][0]
+    ? `/uploads/images/${req.files['image'][0].filename}`
+    : undefined,
+};
     try {
       logger.info('Calling ServiceService.createService');
       const service = await ServiceService.createService(serviceData);
