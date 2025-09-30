@@ -6,14 +6,12 @@ import fileUploadHandler from '../../middlewares/fileUploaderHandler';
 import ApiError from '../../../errors/ApiError';
 import { logger } from '../../../shared/logger';
 
-
 // Create a new service with image upload
 const createService = catchAsync(async (req: Request, res: Response) => {
   logger.info('Starting createService request');
-  const barber = req.user?.id; // Extract barber ID from authenticated user
+  const barber = req.user?.id;
   logger.info(`Barber ID from token: ${barber}`);
 
-  // Validate barber field
   if (!barber) {
     logger.error('Barber ID missing in token');
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Authentication required: Barber ID not found in token');
@@ -77,8 +75,6 @@ const serviceData = {
     }
   });
 });
-
-
 
 // Get all services
 const getAllServices = catchAsync(async (req: Request, res: Response) => {

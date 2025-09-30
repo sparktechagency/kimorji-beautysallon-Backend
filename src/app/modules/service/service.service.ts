@@ -8,7 +8,7 @@ import path from 'path';
 import { logger } from '../../../shared/logger';
 import { SubCategory } from '../subCategory/subCategory.model';
 import { Day } from '../../../enums/day';
-import { to24Hour } from '../../../helpers/find.offer';
+import { isValidDay, to24Hour } from '../../../helpers/find.offer';
 
 interface PaginationOptions {
   page: number;
@@ -255,7 +255,3 @@ export const ServiceService = {
   getAllServicesbarber,
 };
 
-function isValidDay(rawDay: any): boolean {
-  // Check if rawDay matches any value in the Day enum (case-insensitive)
-  return Object.values(Day).some(day => day.toUpperCase() === rawDay.toString().toUpperCase());
-}

@@ -27,6 +27,7 @@ const getAllOffers = catchAsync(async (req: Request, res: Response) => {
         data: result
     });
 });
+
 const findOfferForServiceAt = catchAsync(async (req: Request, res: Response) => {
   const { serviceId, date } = req.params;
   const result = await offerService.findOfferForServiceAt(serviceId, new Date(date));

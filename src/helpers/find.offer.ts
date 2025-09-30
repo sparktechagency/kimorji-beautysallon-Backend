@@ -5,6 +5,7 @@ import { Offer } from "../app/modules/offer/offer.model";
 import { Types } from "mongoose";
 import ApiError from "../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
+import { Day } from "../enums/day";
 
 /**
  * Helpers
@@ -126,4 +127,9 @@ async function findOfferForServiceAt(serviceId: Types.ObjectId | string, datetim
     }
   }
   return best;
+}
+
+export function isValidDay(rawDay: any): boolean {
+  // Check if rawDay matches any value in the Day enum (case-insensitive)
+  return Object.values(Day).some(day => day.toUpperCase() === rawDay.toString().toUpperCase());
 }
