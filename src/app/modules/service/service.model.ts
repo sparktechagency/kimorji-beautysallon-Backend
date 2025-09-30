@@ -20,8 +20,8 @@ const serviceSchema = new Schema<IService, ServiceModel>(
             type: Number,
             required: false
         },
-        timeSchedule: {
-            type: String,
+        dailySchedule: {
+            type: [String],
             required: false
         },
         price: {

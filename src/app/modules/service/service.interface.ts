@@ -9,7 +9,7 @@ export type IService = {
     category: Types.ObjectId;
     image: String;
     transportFee: Number;
-    timeSchedule: String;
+    dailySchedule: String[];
     price: Number;
     duration: String;
     description: String;

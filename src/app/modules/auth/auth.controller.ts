@@ -233,6 +233,5 @@ export const AuthController = {
     verifyEmail,
     login,
     verifyLoginOTP,
-    
     // verifyOTP
 };
