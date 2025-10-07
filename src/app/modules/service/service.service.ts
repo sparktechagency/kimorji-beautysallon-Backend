@@ -54,6 +54,8 @@ interface PaginatedResult {
 //     throw error;
 //   }
 // };
+
+
 const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
   logger.debug(`Service payload: ${JSON.stringify(payload)}`);
@@ -86,7 +88,7 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
       logger.error('dailySchedule is not an array after parsing');
       throw new ApiError(httpStatus.BAD_REQUEST, 'dailySchedule must be an array');
     }
-
+    
     const normalized: Array<{ day: Day; start: string; end: string }> = schedule.map((item: any, idx: number) => {
       if (!item || typeof item !== 'object') {
         throw new ApiError(httpStatus.BAD_REQUEST, `dailySchedule[${idx}] must be an object`);
