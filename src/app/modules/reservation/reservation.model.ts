@@ -38,14 +38,14 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
             type: Number,
             default: 0
         },
-        travelFee: {
-            type: Number,
-            default: 0
-        },
-         appCharge: {
-            type: Number,
-            default: 0
-        },
+        // travelFee: {
+        //     type: Number,
+        //     default: 0
+        // },
+        //  appCharge: {
+        //     type: Number,
+        //     default: 0
+        // },
         txid: {
             type: String,
             unique: true

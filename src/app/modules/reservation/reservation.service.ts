@@ -115,11 +115,11 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
 }
 
 const customerReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<{}> => {
-    const { page, limit, status, coordinates } = query;
+    const { page, limit, status } = query;
 
-    if (!coordinates) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
-    }
+    // if (!coordinates) {
+    //     throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
+    // }
 
     const condition: any = {
         customer: user.id
@@ -160,14 +160,14 @@ const customerReservationFromDB = async (user: JwtPayload, query: Record<string,
         .lean();
 
         const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
-            const distance = await getDistanceFromCoordinates(reservation?.barber?.location?.coordinates, JSON?.parse(coordinates));
+            // const distance = await getDistanceFromCoordinates(reservation?.barber?.location?.coordinates, JSON?.parse(coordinates));
             const rating = await getRatingForBarber(reservation?.barber?._id);
             const review = await Review.findOne({ service : reservation?.service?._id, customer: user.id }).select("rating").lean();
             return {
                 ...reservation,
                 rating: rating,
                 review: review || {},
-                distance: distance ? distance : {}
+                // distance: distance ? distance : {}
             };
         }));
 

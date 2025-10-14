@@ -23,6 +23,16 @@ const scheduleItemSchema = new Schema(
   { _id: false }
 );
 
+const bookedSlotSchema = new Schema(
+  {
+    day: { type: String, enum: Object.values(Day), required: true },
+    start: { type: String, required: true },
+    end: { type: String, required: true },
+    reservationId: { type: Schema.Types.ObjectId, ref: "Reservation", required: true }
+  },
+  { _id: false }
+);
+
 const serviceSchema = new Schema<IService, ServiceModel>(
   {
     serviceType: {
@@ -51,11 +61,13 @@ const serviceSchema = new Schema<IService, ServiceModel>(
     totalRating: { type: Number, default: 0 },
     isOffered: { type: Boolean, default: false },
     parcent: { type: Number, required:false},
+    bookedSlots: { type: [bookedSlotSchema], default: [] },
     status: {
       type: String,
       enum: ["Active", "Inactive"],
       default: "Active"
     }
+    
   },
   { timestamps: true }
 );

@@ -10,13 +10,14 @@ export type IService = {
     image: String;
     transportFee: Number;
     dailySchedule: String[];
-    price: Number;
+    price: number;
     duration: String;
     description: String;
     gender: "Male" | "Female" | "Children" | "Others";
     isOffered: Boolean;
-    parcent: Number,
+    parcent: number,
     rating: Number;
+    bookedSlots:
     status: "Active" | "Inactive";
     totalRating: Number;
 }
