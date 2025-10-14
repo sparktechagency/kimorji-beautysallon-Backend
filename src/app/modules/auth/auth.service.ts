@@ -26,6 +26,7 @@ import { sendTwilioOTP, twilioClient, twilioServiceSid } from '../../../helpers/
 import { USER_ROLES } from '../../../enums/user';
 import { NextFunction } from 'express';
 import DeviceToken from '../fcmToken/fcm.token.model';
+
 const verifyTwilioOTP = async (mobileNumber: string, otpCode: string): Promise<boolean> => {
   try {
     const verificationCheck = await twilioClient.verify.v2
@@ -42,6 +43,7 @@ const verifyTwilioOTP = async (mobileNumber: string, otpCode: string): Promise<b
     return false;
   }
 };
+
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
 
@@ -83,7 +85,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
     return { accessToken, refreshToken };
 };
-
 
 const forgetPasswordToDB = async (email: string) => {
 

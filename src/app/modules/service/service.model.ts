@@ -50,6 +50,7 @@ const serviceSchema = new Schema<IService, ServiceModel>(
     rating: { type: Number, default: 0 },
     totalRating: { type: Number, default: 0 },
     isOffered: { type: Boolean, default: false },
+    parcent: { type: Number, required:false},
     status: {
       type: String,
       enum: ["Active", "Inactive"],

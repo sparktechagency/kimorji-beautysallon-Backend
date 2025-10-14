@@ -15,9 +15,9 @@ export type IService = {
     description: String;
     gender: "Male" | "Female" | "Children" | "Others";
     isOffered: Boolean;
+    parcent: Number,
     rating: Number;
     status: "Active" | "Inactive";
     totalRating: Number;
 }
-
 export type ServiceModel = Model<IService, Record<string, unknown>>;

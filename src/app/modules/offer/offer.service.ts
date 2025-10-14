@@ -15,34 +15,64 @@ const WEEKDAYS: Day[] = [
   Day.FRIDAY,
   Day.SATURDAY
 ];
- const addOfferToDB = async (serviceId: string, payload: {
-  title?: string;
-  percent: number;
-  days: string[];
-  startTime: string;
-  endTime: string;
-  isActive?: boolean;
-}) => {
-  if (!Types.ObjectId.isValid(serviceId)) throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid service id");
+
+const addOfferToDB = async (
+  serviceId: string,
+  payload: {
+    title?: string;
+    percent: number;
+    days: string[];
+    startTime: string;
+    endTime: string;
+    isActive?: boolean;
+  }
+) => {
+  if (!Types.ObjectId.isValid(serviceId)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid service id");
+  }
+
   const { percent, days, startTime, endTime, title, isActive } = payload;
+
   if (typeof percent !== "number" || percent <= 0 || percent > 100) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "percent must be a number between 1 and 100");
   }
-  if (!Array.isArray(days) || days.length === 0) throw new ApiError(StatusCodes.BAD_REQUEST, "days required");
+  if (!Array.isArray(days) || days.length === 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "days required");
+  }
+
   const s = to24Hour(startTime);
   const e = to24Hour(endTime);
 
-  const offer = await Offer.create({
-    service: serviceId,
-    title,
-    percent,
-    days,
-    startTime: s,
-    endTime: e,
-    isActive: !!isActive
-  });
+  // Check if an offer already exists for this service
+  const existingOffer = await Offer.findOne({ service: serviceId, isActive: true });
 
-  await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true } });
+  let offer;
+
+  if (existingOffer) {
+    // Update existing offer
+    existingOffer.title = title ?? existingOffer.title;
+    existingOffer.percent = percent;
+    existingOffer.days = days;
+    existingOffer.startTime = s;
+    existingOffer.endTime = e;
+    existingOffer.isActive = isActive ?? true;
+
+    offer = await existingOffer.save();
+  } else {
+    // Create new offer
+    offer = await Offer.create({
+      service: serviceId,
+      title,
+      percent,
+      days,
+      startTime: s,
+      endTime: e,
+      isActive: !!isActive
+    });
+  }
+
+  // Update the Service document with discount info
+  await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true, parcent:offer.percent } });
 
   return offer;
 };

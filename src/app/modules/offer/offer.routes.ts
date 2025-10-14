@@ -4,7 +4,7 @@ import { USER_ROLES } from '../../../enums/user';
 import { offerController } from './offer.controller';
 const router = express.Router();
 
-router.post(
+router.patch(
     '/:id',
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER),
     offerController.addOffer

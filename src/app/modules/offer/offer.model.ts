@@ -1,6 +1,7 @@
 import { model, Schema } from "mongoose";
 import { IOffer } from "./offer.interface";
 import { Day } from "../../../enums/day";
+import { Service } from "../service/service.model";
 
 const offerSchema = new Schema<IOffer>(
   {
@@ -16,5 +17,6 @@ const offerSchema = new Schema<IOffer>(
   },
   { timestamps: true }
 );
+
 
 export const Offer = model<IOffer>("Offer", offerSchema);
