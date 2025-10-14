@@ -43,7 +43,6 @@ const addOfferToDB = async (
   const s = to24Hour(startTime);
   const e = to24Hour(endTime);
 
-  // Check if an offer already exists for this service
   const existingOffer = await Offer.findOne({ service: serviceId, isActive: true });
 
   let offer;
