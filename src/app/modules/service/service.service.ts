@@ -32,11 +32,12 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
   logger.debug(`Service payload: ${JSON.stringify(payload)}`);
 
-  // barber validation
+  // Validate barber ID
   if (!payload.barber) {
     logger.error('Barber ID missing in payload');
     throw new ApiError(httpStatus.BAD_REQUEST, 'Barber ID is required');
   }
+
   logger.info(`Validating barber ID: ${payload.barber}`);
   const barberExists = await User.findById(payload.barber).select('_id');
   if (!barberExists) {
@@ -44,39 +45,95 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Barber not found');
   }
 
-  // Normalize dailySchedule (accept either array or JSON string)
-if (payload.dailySchedule) {
-  let schedule = typeof payload.dailySchedule === 'string' ? JSON.parse(payload.dailySchedule) : payload.dailySchedule;
+  // Process and normalize dailySchedule
+  if (payload.dailySchedule) {
+    try {
+      // Parse if string, otherwise use as-is
+      let schedule = typeof payload.dailySchedule === 'string'
+        ? JSON.parse(payload.dailySchedule)
+        : payload.dailySchedule;
 
-  if (!Array.isArray(schedule)) throw new ApiError(httpStatus.BAD_REQUEST, 'dailySchedule must be an array');
+      // Validate it's an array
+      if (!Array.isArray(schedule)) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'dailySchedule must be an array');
+      }
 
-  const normalized = schedule.map((item: any, idx: number) => {
-    if (!item.day || !item.timeSlot || !Array.isArray(item.timeSlot)) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `dailySchedule[${idx}] must include 'day' and 'timeSlot' array`);
+      // Normalize each schedule item
+      const normalized = schedule.map((item: any, idx: number) => {
+        // Validate structure
+        if (!item.day || !item.timeSlot || !Array.isArray(item.timeSlot)) {
+          throw new ApiError(
+            httpStatus.BAD_REQUEST,
+            `dailySchedule[${idx}] must include 'day' and 'timeSlot' array`
+          );
+        }
+
+        // Normalize day to uppercase
+        const day = item.day.toUpperCase() as Day;
+
+        // Validate day is valid enum value
+        if (!Object.values(Day).includes(day)) {
+          throw new ApiError(
+            httpStatus.BAD_REQUEST,
+            `Invalid day '${item.day}'. Must be one of: ${Object.values(Day).join(', ')}`
+          );
+        }
+
+        // Convert time slots to 24-hour format
+        const timeSlot = item.timeSlot.map((time: string, timeIdx: number) => {
+          try {
+            return to24Hour(time);
+          } catch (error) {
+            throw new ApiError(
+              httpStatus.BAD_REQUEST,
+              `Invalid time format in dailySchedule[${idx}].timeSlot[${timeIdx}]: ${time}. Expected format: HH:MM AM/PM (e.g., "09:00 AM")`
+            );
+          }
+        });
+
+        // Sort time slots in ascending order
+        timeSlot.sort((a, b) => {
+          const [aHour, aMin] = a.split(':').map(Number);
+          const [bHour, bMin] = b.split(':').map(Number);
+          return (aHour * 60 + aMin) - (bHour * 60 + bMin);
+        });
+
+        logger.info(`Normalized schedule for ${day}: ${timeSlot.join(', ')}`);
+
+        return {
+          day,
+          timeSlot
+        };
+      });
+
+      payload.dailySchedule = normalized as any;
+      logger.info('dailySchedule normalized successfully');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      logger.error(`Error processing dailySchedule: ${error}`);
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Error processing dailySchedule: ${(error as Error).message}`
+      );
     }
-    const day = item.day.toUpperCase() as Day;
-
-    return {
-      day,
-      timeSlot: item.timeSlot.map((t: string) => to24Hour(t)) // optional: normalize to 24-hour format
-    };
-  });
-
-  payload.dailySchedule = normalized as any;
-}
-
+  }
 
   try {
+    logger.info('Creating service in database');
     const service = await Service.create(payload);
     logger.info(`Service created with ID: ${service._id}`);
-    // populate fields before returning
-    return (await service.populate('category title barber')) as unknown as IService;
+
+    // Populate related fields before returning
+    const populatedService = await service.populate('category title barber');
+    return populatedService as unknown as IService;
   } catch (error) {
     logger.error(`Database error creating service: ${error}`);
-    // Rethrow (catchAsync will handle)
     throw error;
   }
 };
+
 
 // Get all services
 const getAllServices = async (pagination: { page: number, totalPage: number, limit: number, total: number }): Promise<{ services: IService[], pagination: { page: number, limit: number, total: number, totalPage: number } }> => {

@@ -1,44 +1,37 @@
 import { Model, Types } from "mongoose";
 import { ServiceType } from "../../../enums/serviceType";
-
 export type IScheduleItem = {
   day: string;
-//   start: string; // "HH:mm"
-//   end: string; // "HH:mm"
-    timeSlot?: string[];
+  timeSlot: string[]; // Array of time slots like ["09:00", "10:00", "11:00"]
 };
 
 export type IBookedSlot = {
   date: string; // "YYYY-MM-DD"
-//   start: string; // "HH:mm"
-//   end: string; // "HH:mm"
-    timeSlot?: string[];
+  timeSlot: string; // "HH:mm" - single time slot
   reservationId: Types.ObjectId;
 };
-
 export type IService = {
   barber: Types.ObjectId;
   serviceType: ServiceType;
   title: Types.ObjectId;
   category: Types.ObjectId;
-  image: String;
-  transportFee: Number;
-  dailySchedule: String[];
+  image: string;
+  transportFee: number;
+  dailySchedule: IScheduleItem[];
   price: number;
-  duration: String;
-  description: String;
+  duration: string;
+  description: string;
   gender: "Male" | "Female" | "Children" | "Others";
-  isOffered: Boolean;
+  isOffered: boolean;
   parcent: number;
-  rating: Number;
-  bookedSlots: IBookedSlot[]; // Updated type
+  rating: number;
+  bookedSlots: IBookedSlot[];
   status: "Active" | "Inactive";
-  totalRating: Number;
+  totalRating: number;
 };
 
 export type ServiceModel = Model<IService, Record<string, unknown>>;
 
-// export type IService = {
 //     barber: Types.ObjectId;
 //     serviceType: ServiceType;
 //     title: Types.ObjectId;

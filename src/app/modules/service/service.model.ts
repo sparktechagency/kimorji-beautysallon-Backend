@@ -1,35 +1,23 @@
 import { model, Schema } from "mongoose";
-import { IService, ServiceModel } from "./service.interface";
+import { IBookedSlot, IScheduleItem, IService, ServiceModel } from "./service.interface";
 import { ServiceType } from "../../../enums/serviceType";
 import { Day } from "../../../enums/day";
-const scheduleItemSchema = new Schema(
+const scheduleItemSchema = new Schema<IScheduleItem>(
   {
     day: {
       type: String,
       enum: Object.values(Day),
       required: true
     },
-    // start: {
-    //   type: String,
-    //   required: true
-    // }, // "HH:mm" 24-hour
-    // end: {
-    //   type: String,
-    //   required: true
-    // } // "HH:mm" 24-hour
-     timeSlot: [{ type: String, required: false }], 
+    timeSlot: [{ type: String, required: false }]
   },
   { _id: false }
 );
 
-// Add booked slots schema with date
-const bookedSlotSchema = new Schema(
+const bookedSlotSchema = new Schema<IBookedSlot>(
   {
-    date: { type: String, required: true }, // "YYYY-MM-DD" format
-    // start: { type: String, required: true }, // "HH:mm" 24-hour
-    // end: { type: String, required: true }, // "HH:mm" 24-hour
-     timeSlot: [{ type: String, required: false }], 
-    reservationId: { type: Schema.Types.ObjectId, ref: "Reservation", required: true }
+    date: { type: String, required: true },
+    timeSlot: { type: String, required: true },
   },
   { _id: false }
 );

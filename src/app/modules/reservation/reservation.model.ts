@@ -103,14 +103,10 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
       type: String,
       required: true
     }, // "YYYY-MM-DD"
-    // startTime: {
-    //   type: String,
-    //   required: true
-    // }, // "HH:mm"
-    // endTime: {
-    //   type: String,
-    //   required: true
-    // }, // "HH:mm"
+    timeSlot: {
+      type: String,
+      required: true
+    }, // "HH:mm"
     status: {
       type: String,
       enum: ["Upcoming", "Accepted", "Canceled", "Completed"],
@@ -124,7 +120,7 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
     },
     price: {
       type: Number,
-      required: false
+      required: true
     },
     tips: {
       type: Number,
@@ -163,7 +159,5 @@ ReservationSchema.pre("save", async function (next) {
   }
   next();
 });
-
-
 
 export const Reservation = model<IReservation, ReservationModel>("Reservation", ReservationSchema);

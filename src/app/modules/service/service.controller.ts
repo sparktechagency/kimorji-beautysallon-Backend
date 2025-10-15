@@ -11,13 +11,17 @@ const createService = catchAsync(async (req: Request, res: Response) => {
   logger.info('Starting createService request');
   const barber = req.user?.id;
   logger.info(`Barber ID from token: ${barber}`);
-
+  
   if (!barber) {
     logger.error('Barber ID missing in token');
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Authentication required: Barber ID not found in token');
+    throw new ApiError(
+      httpStatus.UNAUTHORIZED,
+      'Authentication required: Barber ID not found in token'
+    );
   }
 
   const upload = fileUploadHandler();
+  
   upload(req, res, async (err) => {
     if (err) {
       logger.error(`File upload error: ${err.message}`);
@@ -31,52 +35,59 @@ const createService = catchAsync(async (req: Request, res: Response) => {
     logger.debug(`Request body: ${JSON.stringify(req.body)}`);
     logger.debug(`Uploaded files: ${JSON.stringify(req.files)}`);
 
-    // const serviceData = {
-    //   ...req.body,
-    //   barber, // Add barber ID from req.user
-    //   image: req.files && 'image' in req.files && req.files['image'][0]
-    //     ? `/uploads/images/${req.files['image'][0].filename}`
-    //     : undefined,
-    // };
-let parsedDailySchedule: any = undefined;
+    // Parse and validate dailySchedule
+    let parsedDailySchedule: any = undefined;
+    if (req.body?.dailySchedule) {
+      try {
+        // Parse if it's a JSON string
+        const scheduleData = typeof req.body.dailySchedule === 'string'
+          ? JSON.parse(req.body.dailySchedule)
+          : req.body.dailySchedule;
 
-if (req.body?.dailySchedule && typeof req.body.dailySchedule === 'string') {
-  try {
-    parsedDailySchedule = JSON.parse(req.body.dailySchedule);
+        // Validate it's an array
+        if (!Array.isArray(scheduleData)) {
+          throw new Error("dailySchedule must be an array");
+        }
 
-    // Validate it's an array of objects
-    if (!Array.isArray(parsedDailySchedule)) {
-      throw new Error("dailySchedule must be an array");
+        // Validate each schedule item
+        scheduleData.forEach((item: any, idx: number) => {
+          if (!item.day) {
+            throw new Error(`dailySchedule[${idx}] must have 'day' property`);
+          }
+          if (!item.timeSlot || !Array.isArray(item.timeSlot)) {
+            throw new Error(`dailySchedule[${idx}] must have 'timeSlot' array`);
+          }
+          if (item.timeSlot.length === 0) {
+            throw new Error(`dailySchedule[${idx}].timeSlot cannot be empty`);
+          }
+        });
+
+        parsedDailySchedule = scheduleData;
+        logger.info('dailySchedule parsed and validated successfully');
+      } catch (err) {
+        logger.error(`Invalid dailySchedule: ${(err as Error).message}`);
+        return res.status(httpStatus.BAD_REQUEST).json({
+          success: false,
+          message: `Invalid dailySchedule format: ${(err as Error).message}`,
+        });
+      }
     }
 
-    parsedDailySchedule.forEach((item: any, idx: number) => {
-      if (!item.day || !item.timeSlot || !Array.isArray(item.timeSlot)) {
-        throw new Error(`dailySchedule[${idx}] must have 'day' and 'timeSlot' array`);
-      }
-    });
-  } catch (err) {
-    logger.error(`Invalid dailySchedule JSON: ${(err as Error).message}`);
-    return res.status(httpStatus.BAD_REQUEST).json({
-      success: false,
-      message: `Invalid dailySchedule JSON format: ${(err as Error).message}`,
-    });
-  }
-}
+    // Build service data
+    const serviceData = {
+      ...req.body,
+      dailySchedule: parsedDailySchedule ?? req.body.dailySchedule,
+      barber,
+      image: req.files && 'image' in req.files && req.files['image'][0]
+        ? `/uploads/images/${req.files['image'][0].filename}`
+        : undefined,
+    };
 
-
-const serviceData = {
-  ...req.body,
-  // prefer parsed JSON if provided
-  dailySchedule: parsedDailySchedule ?? req.body.dailySchedule,
-  barber,
-  image: req.files && 'image' in req.files && req.files['image'][0]
-    ? `/uploads/images/${req.files['image'][0].filename}`
-    : undefined,
-};
     try {
       logger.info('Calling ServiceService.createService');
       const service = await ServiceService.createService(serviceData);
       logger.info('Service created successfully');
+      
       res.status(httpStatus.CREATED).json({
         success: true,
         message: 'Service created successfully',

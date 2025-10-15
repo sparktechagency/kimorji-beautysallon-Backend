@@ -1,12 +1,10 @@
 import { Model, Types } from "mongoose"
 export type IReservation = {
-  timeSlot: string[] | undefined;
   barber: Types.ObjectId;
   customer: Types.ObjectId;
   service: Types.ObjectId;
   reservationDate: string; // "YYYY-MM-DD"
-  startTime: string; // "HH:mm"
-  endTime: string; // "HH:mm"
+  timeSlot: string; // "HH:mm" - single time slot
   status: "Upcoming" | "Accepted" | "Canceled" | "Completed";
   paymentStatus: "Pending" | "Paid" | "Refunded";
   price: number;
