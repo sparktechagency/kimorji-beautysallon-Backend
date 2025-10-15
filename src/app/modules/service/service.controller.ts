@@ -39,17 +39,30 @@ const createService = catchAsync(async (req: Request, res: Response) => {
     //     : undefined,
     // };
 let parsedDailySchedule: any = undefined;
+
 if (req.body?.dailySchedule && typeof req.body.dailySchedule === 'string') {
   try {
     parsedDailySchedule = JSON.parse(req.body.dailySchedule);
+
+    // Validate it's an array of objects
+    if (!Array.isArray(parsedDailySchedule)) {
+      throw new Error("dailySchedule must be an array");
+    }
+
+    parsedDailySchedule.forEach((item: any, idx: number) => {
+      if (!item.day || !item.timeSlot || !Array.isArray(item.timeSlot)) {
+        throw new Error(`dailySchedule[${idx}] must have 'day' and 'timeSlot' array`);
+      }
+    });
   } catch (err) {
     logger.error(`Invalid dailySchedule JSON: ${(err as Error).message}`);
     return res.status(httpStatus.BAD_REQUEST).json({
       success: false,
-      message: 'Invalid dailySchedule JSON format',
+      message: `Invalid dailySchedule JSON format: ${(err as Error).message}`,
     });
   }
 }
+
 
 const serviceData = {
   ...req.body,

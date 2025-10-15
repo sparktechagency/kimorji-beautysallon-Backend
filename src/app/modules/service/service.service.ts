@@ -27,34 +27,6 @@ interface PaginatedResult {
   };
 }
 
-// Create a new service
-// const createService = async (payload: IService): Promise<IService> => {
-//   logger.info('Starting createService in service layer');
-//   logger.debug(`Service payload: ${JSON.stringify(payload)}`);
-
-//   // Validate barber existence
-//   if (payload.barber) {
-//     logger.info(`Validating barber ID: ${payload.barber}`);
-//     const barberExists = await User.findById(payload.barber).select('_id');
-//     if (!barberExists) {
-//       logger.error(`Barber not found: ${payload.barber}`);
-//       throw new ApiError(httpStatus.NOT_FOUND, 'Barber not found');
-//     }
-//   } else {
-//     logger.error('Barber ID missing in payload');
-//     throw new ApiError(httpStatus.BAD_REQUEST, 'Barber ID is required');
-//   }
-
-//   try {
-//     const service = await Service.create(payload);
-//     logger.info(`Service created with ID: ${service._id}`);
-//     return service.populate('category title barber');
-//   } catch (error) {
-//     logger.error(`Database error creating service: ${error}`);
-//     throw error;
-//   }
-// };
-
 
 const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
@@ -73,46 +45,26 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
   }
 
   // Normalize dailySchedule (accept either array or JSON string)
-  if (payload.dailySchedule) {
-    let schedule = payload.dailySchedule as any;
-    if (typeof schedule === 'string') {
-      try {
-        schedule = JSON.parse(schedule);
-      } catch (err) {
-        logger.error(`Failed to JSON.parse dailySchedule: ${(err as Error).message}`);
-        throw new ApiError(httpStatus.BAD_REQUEST, 'dailySchedule must be a valid JSON array');
-      }
+if (payload.dailySchedule) {
+  let schedule = typeof payload.dailySchedule === 'string' ? JSON.parse(payload.dailySchedule) : payload.dailySchedule;
+
+  if (!Array.isArray(schedule)) throw new ApiError(httpStatus.BAD_REQUEST, 'dailySchedule must be an array');
+
+  const normalized = schedule.map((item: any, idx: number) => {
+    if (!item.day || !item.timeSlot || !Array.isArray(item.timeSlot)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `dailySchedule[${idx}] must include 'day' and 'timeSlot' array`);
     }
+    const day = item.day.toUpperCase() as Day;
 
-    if (!Array.isArray(schedule)) {
-      logger.error('dailySchedule is not an array after parsing');
-      throw new ApiError(httpStatus.BAD_REQUEST, 'dailySchedule must be an array');
-    }
-    
-    const normalized: Array<{ day: Day; start: string; end: string }> = schedule.map((item: any, idx: number) => {
-      if (!item || typeof item !== 'object') {
-        throw new ApiError(httpStatus.BAD_REQUEST, `dailySchedule[${idx}] must be an object`);
-      }
+    return {
+      day,
+      timeSlot: item.timeSlot.map((t: string) => to24Hour(t)) // optional: normalize to 24-hour format
+    };
+  });
 
-      const rawDay = item.day ?? item.DAY ?? item.Day;
-      if (!rawDay || !isValidDay(rawDay)) {
-        throw new ApiError(httpStatus.BAD_REQUEST, `dailySchedule[${idx}].day is invalid. Allowed: ${Object.values(Day).join(', ')}`);
-      }
-      const day = rawDay.toString().toUpperCase() as Day;
+  payload.dailySchedule = normalized as any;
+}
 
-      if (!item.start || !item.end) {
-        throw new ApiError(httpStatus.BAD_REQUEST, `dailySchedule[${idx}] must include start and end times`);
-      }
-
-      const start = to24Hour(item.start);
-      const end = to24Hour(item.end);
-
-      return { day, start: String(start), end: String(end) };
-    });
-
-    // attach normalized schedule back to payload
-    payload.dailySchedule = normalized as any;
-  }
 
   try {
     const service = await Service.create(payload);

@@ -1,5 +1,6 @@
 import { Model, Types } from "mongoose"
 export type IReservation = {
+  timeSlot: string[] | undefined;
   barber: Types.ObjectId;
   customer: Types.ObjectId;
   service: Types.ObjectId;

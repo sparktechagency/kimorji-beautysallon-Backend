@@ -9,14 +9,15 @@ const scheduleItemSchema = new Schema(
       enum: Object.values(Day),
       required: true
     },
-    start: {
-      type: String,
-      required: true
-    }, // "HH:mm" 24-hour
-    end: {
-      type: String,
-      required: true
-    } // "HH:mm" 24-hour
+    // start: {
+    //   type: String,
+    //   required: true
+    // }, // "HH:mm" 24-hour
+    // end: {
+    //   type: String,
+    //   required: true
+    // } // "HH:mm" 24-hour
+     timeSlot: [{ type: String, required: false }], 
   },
   { _id: false }
 );
@@ -25,8 +26,9 @@ const scheduleItemSchema = new Schema(
 const bookedSlotSchema = new Schema(
   {
     date: { type: String, required: true }, // "YYYY-MM-DD" format
-    start: { type: String, required: true }, // "HH:mm" 24-hour
-    end: { type: String, required: true }, // "HH:mm" 24-hour
+    // start: { type: String, required: true }, // "HH:mm" 24-hour
+    // end: { type: String, required: true }, // "HH:mm" 24-hour
+     timeSlot: [{ type: String, required: false }], 
     reservationId: { type: Schema.Types.ObjectId, ref: "Reservation", required: true }
   },
   { _id: false }

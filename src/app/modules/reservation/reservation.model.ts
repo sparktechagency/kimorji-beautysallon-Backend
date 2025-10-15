@@ -103,14 +103,14 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
       type: String,
       required: true
     }, // "YYYY-MM-DD"
-    startTime: {
-      type: String,
-      required: true
-    }, // "HH:mm"
-    endTime: {
-      type: String,
-      required: true
-    }, // "HH:mm"
+    // startTime: {
+    //   type: String,
+    //   required: true
+    // }, // "HH:mm"
+    // endTime: {
+    //   type: String,
+    //   required: true
+    // }, // "HH:mm"
     status: {
       type: String,
       enum: ["Upcoming", "Accepted", "Canceled", "Completed"],
@@ -124,7 +124,7 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
     },
     price: {
       type: Number,
-      required: true
+      required: false
     },
     tips: {
       type: Number,

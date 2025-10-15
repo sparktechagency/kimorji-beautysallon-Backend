@@ -3,14 +3,16 @@ import { ServiceType } from "../../../enums/serviceType";
 
 export type IScheduleItem = {
   day: string;
-  start: string; // "HH:mm"
-  end: string; // "HH:mm"
+//   start: string; // "HH:mm"
+//   end: string; // "HH:mm"
+    timeSlot?: string[];
 };
 
 export type IBookedSlot = {
   date: string; // "YYYY-MM-DD"
-  start: string; // "HH:mm"
-  end: string; // "HH:mm"
+//   start: string; // "HH:mm"
+//   end: string; // "HH:mm"
+    timeSlot?: string[];
   reservationId: Types.ObjectId;
 };
 

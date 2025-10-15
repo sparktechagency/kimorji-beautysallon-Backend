@@ -114,6 +114,34 @@ const confirmReservation = catchAsync(async (req: Request, res: Response) => {
     })
 }); 
 
+
+const updateReservationStatus = catchAsync(async (req: Request, res: Response) => {
+  const { reservationId, status } = req.query;
+
+  if (!reservationId || !status) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "reservationId and status are required");
+  }
+
+  // Optionally validate allowed statuses up-front
+  const allowed = ["Completed", "Canceled"];
+  if (!allowed.includes(String(status))) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, `status must be one of: ${allowed.join(", ")}`);
+  }
+
+  const reservation = await ReservationService.updateReservationStatus(
+    reservationId as string,
+    status as "Completed" | "Canceled"
+  );
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Reservation status updated successfully",
+    data: reservation,
+  });
+});
+
+
 export const ReservationController = {
     createReservation,
     barberReservation,
@@ -123,5 +151,6 @@ export const ReservationController = {
     respondedReservation,
     cancelReservation,
     confirmReservation,
-    aviliableslot
+    aviliableslot,
+    updateReservationStatus
 }

@@ -50,6 +50,10 @@ router.patch("/confirm/:id",
     ReservationController.confirmReservation
 )
 
+router.patch("/status",
+    auth(USER_ROLES.BARBER),
+    ReservationController.updateReservationStatus
+)
 router.route("/:id")
     .get(
         auth(USER_ROLES.BARBER),

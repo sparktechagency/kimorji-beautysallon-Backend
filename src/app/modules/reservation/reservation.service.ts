@@ -35,17 +35,14 @@ import { AvailableSlotResponse, generateTimeSlots, isSlotBooked } from "../../..
 // };
 
 const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
-  // Check if the slot is already booked
   const service = await Service.findById(payload.service);
-  if (!service) {
-    throw new Error("Service not found");
-  }
+  if (!service) throw new Error("Service not found");
+
+  // Check if the chosen slot is already booked
   const isSlotBooked = service.bookedSlots.some(
     (slot) =>
       slot.date === payload.reservationDate &&
-      ((payload.startTime >= slot.start && payload.startTime < slot.end) ||
-        (payload.endTime > slot.start && payload.endTime <= slot.end) ||
-        (payload.startTime <= slot.start && payload.endTime >= slot.end))
+      slot.timeSlot === payload.timeSlot
   );
 
   if (isSlotBooked) {
@@ -54,17 +51,14 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
 
   // Create the reservation
   const reservation = await Reservation.create(payload);
-  if (!reservation) {
-    throw new Error("Failed to create Reservation");
-  }
+  if (!reservation) throw new Error("Failed to create reservation");
 
   // Add the booked slot to the service
   await Service.findByIdAndUpdate(payload.service, {
     $push: {
       bookedSlots: {
         date: payload.reservationDate,
-        start: payload.startTime,
-        end: payload.endTime,
+        timeSlot: payload.timeSlot,
         reservationId: reservation._id
       }
     }
@@ -82,13 +76,18 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
   return reservation;
 };
 
+
 const updateReservationStatus = async (
   reservationId: string,
   status: "Completed" | "Canceled"
 ): Promise<IReservation | null> => {
+  if (!mongoose.Types.ObjectId.isValid(reservationId)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid reservationId");
+  }
+
   const reservation = await Reservation.findById(reservationId);
   if (!reservation) {
-    throw new Error("Reservation not found");
+    throw new ApiError(StatusCodes.NOT_FOUND, "Reservation not found");
   }
 
   // Update reservation status
@@ -96,16 +95,15 @@ const updateReservationStatus = async (
   await reservation.save();
 
   // If completed or canceled, remove the booked slot from service
-  if (status === "Completed") {
+  if (status === "Completed" || status === "Canceled") {
     await Service.findByIdAndUpdate(reservation.service, {
-      $pull: {
-        bookedSlots: { reservationId: reservation._id }
-      }
+      $pull: { bookedSlots: { reservationId: reservation._id } }
     });
   }
 
   return reservation;
 };
+
 
 
 
@@ -117,47 +115,65 @@ const getAvailableSlots = async (serviceId: string, date: string): Promise<Avail
 
   // Get the day of week from date (e.g., "Monday", "Tuesday")
   const dayOfWeek = new Date(date).toLocaleDateString("en-US", { weekday: "long" });
-  const dayOfWeekUpper = dayOfWeek.toUpperCase(); // Convert to uppercase to match your enum
+  const dayOfWeekUpper = dayOfWeek.toUpperCase(); // match enum
 
-  // Get daily schedule for this day (check both formats)
+  // Find daily schedule for this day
   const dailySchedule = service.dailySchedule.find(
     (schedule) => schedule.day === dayOfWeekUpper || schedule.day === dayOfWeek
   );
-  
+
   if (!dailySchedule) {
     throw new Error(`No schedule available for ${dayOfWeek}`);
   }
 
-  // Get booked slots for this specific date
+  // Determine start and end times from dailySchedule
+  // If your schema uses timeSlot[], derive start/end from first and last slot
+// Determine start and end times safely
+let scheduleStart = "00:00";
+let scheduleEnd = "23:59";
+
+if (dailySchedule.timeSlot && dailySchedule.timeSlot.length > 0) {
+  const validSlots = dailySchedule.timeSlot.filter((t) => typeof t === "string" && t.trim() !== "");
+  if (validSlots.length === 0) {
+    throw new Error(`No valid time slots for ${dayOfWeek}`);
+  }
+  scheduleStart = validSlots[0];
+  scheduleEnd = validSlots[validSlots.length - 1];
+} else if ((dailySchedule as any).start && (dailySchedule as any).end) {
+  scheduleStart = (dailySchedule as any).start;
+  scheduleEnd = (dailySchedule as any).end;
+} else {
+  throw new Error(`No valid start/end or timeSlot for ${dayOfWeek}`);
+}
+
+
+  // Get booked slots for this date
   const bookedSlots = service.bookedSlots.filter((slot) => slot.date === date);
 
   // Generate all possible time slots
-  const allSlots = generateTimeSlots(
-    dailySchedule.start,
-    dailySchedule.end,
-    service.duration
-  );
+  const allSlots = generateTimeSlots(scheduleStart, scheduleEnd, service.duration);
 
-  // Mark slots as booked or available
+  // Mark slots as booked
   const slotsWithStatus = allSlots.map((slot) => {
-    const isBooked = isSlotBooked(slot, bookedSlots);
+    const bookingInfo = isSlotBooked(slot, bookedSlots);
     return {
       start: slot.start,
       end: slot.end,
-      isBooked: isBooked.booked,
-      reservationId: isBooked.reservationId
+      isBooked: bookingInfo.booked,
+      reservationId: bookingInfo.reservationId
     };
   });
 
   return {
     date,
     dayOfWeek,
-    scheduleStart: dailySchedule.start,
-    scheduleEnd: dailySchedule.end,
+    scheduleStart,
+    scheduleEnd,
     serviceDuration: service.duration,
     slots: slotsWithStatus
   };
 };
+
 
 
 

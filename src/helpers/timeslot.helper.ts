@@ -49,12 +49,13 @@ export const isSlotBooked = (
   bookedSlots: IBookedSlot[]
 ): { booked: boolean; reservationId?: string } => {
   for (const booked of bookedSlots) {
+    if (!booked.start || !booked.end) continue; // skip invalid entries
+
     const slotStart = timeToMinutes(slot.start);
     const slotEnd = timeToMinutes(slot.end);
     const bookedStart = timeToMinutes(booked.start);
     const bookedEnd = timeToMinutes(booked.end);
-    
-    // Check for overlap
+
     if (
       (slotStart >= bookedStart && slotStart < bookedEnd) ||
       (slotEnd > bookedStart && slotEnd <= bookedEnd) ||
@@ -63,7 +64,7 @@ export const isSlotBooked = (
       return { booked: true, reservationId: booked.reservationId.toString() };
     }
   }
-  
+
   return { booked: false };
 };
 
