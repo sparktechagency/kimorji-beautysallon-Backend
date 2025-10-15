@@ -10,24 +10,136 @@ import getDistanceFromCoordinates from "../../../shared/getDistanceFromCoordinat
 import getRatingForBarber from "../../../shared/getRatingForBarber";
 import { Review } from "../review/review.model";
 import { User } from "../user/user.model";
+import { Service } from "../service/service.model";
+import { string } from "zod";
+
+// const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
+//     const reservation = await Reservation.create(payload);
+//     if (!reservation) {
+//         throw new Error('Failed to created Reservation ');
+//     } else {
+//         const data = {
+//             text: "You receive a new reservation request",
+//             receiver: payload.barber,
+//             referenceId: reservation._id,
+//             screen: "RESERVATION"
+//         }
+
+//         sendNotifications(data);
+//     }
+
+//     return reservation;
+// };
 
 const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
-    const reservation = await Reservation.create(payload);
-    if (!reservation) {
-        throw new Error('Failed to created Reservation ');
-    } else {
-        const data = {
-            text: "You receive a new reservation request",
-            receiver: payload.barber,
-            referenceId: reservation._id,
-            screen: "RESERVATION"
-        }
+  // Check if the slot is already booked
+  const service = await Service.findById(payload.service);
+  if (!service) {
+    throw new Error("Service not found");
+  }
 
-        sendNotifications(data);
+  // Check if the time slot is already booked for this date
+  const isSlotBooked = service.bookedSlots.some(
+    (slot) =>
+      slot.date === payload.reservationDate &&
+      ((payload.startTime >= slot.start && payload.startTime < slot.end) ||
+        (payload.endTime > slot.start && payload.endTime <= slot.end) ||
+        (payload.startTime <= slot.start && payload.endTime >= slot.end))
+  );
+
+  if (isSlotBooked) {
+    throw new Error("This time slot is already booked for the selected date");
+  }
+
+  // Create the reservation
+  const reservation = await Reservation.create(payload);
+  if (!reservation) {
+    throw new Error("Failed to create Reservation");
+  }
+
+  // Add the booked slot to the service
+  await Service.findByIdAndUpdate(payload.service, {
+    $push: {
+      bookedSlots: {
+        date: payload.reservationDate,
+        start: payload.startTime,
+        end: payload.endTime,
+        reservationId: reservation._id
+      }
     }
+  });
 
-    return reservation;
+  // Send notification
+  const data = {
+    text: "You receive a new reservation request",
+    receiver: payload.barber,
+    referenceId: reservation._id,
+    screen: "RESERVATION"
+  };
+  sendNotifications(data);
+
+  return reservation;
 };
+
+const updateReservationStatus = async (
+  reservationId: string,
+  status: "Completed" | "Canceled"
+): Promise<IReservation | null> => {
+  const reservation = await Reservation.findById(reservationId);
+  if (!reservation) {
+    throw new Error("Reservation not found");
+  }
+
+  // Update reservation status
+  reservation.status = status;
+  await reservation.save();
+
+  // If completed or canceled, remove the booked slot from service
+  if (status === "Completed" || status === "Canceled") {
+    await Service.findByIdAndUpdate(reservation.service, {
+      $pull: {
+        bookedSlots: { reservationId: reservation._id }
+      }
+    });
+  }
+
+  return reservation;
+};
+
+const getAvailableSlots = async (serviceId: string, date: string): Promise<any[]> => {
+  const service = await Service.findById(serviceId);
+  if (!service) {
+    throw new Error("Service not found");
+  }
+
+  // Get the day of week from date (e.g., "Monday", "Tuesday")
+  const dayOfWeek = new Date(date).toLocaleDateString("en-US", { weekday: "long" });
+
+  // Get daily schedule for this day
+  const dailySchedule = service.dailySchedule.find((schedule: any) => schedule.day === dayOfWeek);
+  if (!dailySchedule) {
+    return []; 
+  }
+
+  const bookedSlots = service.bookedSlots.filter((slot) => slot.date === date);
+
+  return {
+    dailySchedule,
+    bookedSlots,
+    availableSlots: calculateAvailableSlots(dailySchedule, bookedSlots, service.duration)
+  };
+};
+
+// Helper function to calculate available slots
+const calculateAvailableSlots = (schedule: any, bookedSlots: any[], duration: string): any[] => {
+  // Implementation depends on your duration format and logic
+  // This is a placeholder - you'll need to implement the actual slot calculation
+  const availableSlots: any[] = [];
+  // Your logic here to generate time slots based on schedule and duration
+  // Then filter out booked slots
+  return availableSlots;
+};
+
 
 const barberReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<any> => {
     const { page, limit, status, coordinates } = query;
@@ -364,5 +476,6 @@ export const ReservationService = {
     reservationDetailsFromDB,
     respondedReservationFromDB,
     cancelReservationFromDB,
-    confirmReservationFromDB
+    confirmReservationFromDB,
+    getAvailableSlots
 }

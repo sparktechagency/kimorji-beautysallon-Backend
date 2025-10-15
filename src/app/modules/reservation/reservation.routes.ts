@@ -28,8 +28,12 @@ router.route("/")
     )
     .get(
         auth(USER_ROLES.CUSTOMER), 
-        ReservationController.customerReservation
+        ReservationController.customerReservation,
     );
+
+router.get("/aviliable-slot",
+    ReservationController.aviliableslot
+);
 
 router.get("/barber",
     auth(USER_ROLES.BARBER),
