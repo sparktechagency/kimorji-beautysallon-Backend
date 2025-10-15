@@ -12,6 +12,9 @@ import { Review } from "../review/review.model";
 import { User } from "../user/user.model";
 import { Service } from "../service/service.model";
 import { string } from "zod";
+import { IBookedSlot } from "../service/service.interface";
+import { AvailableSlotResponse, generateTimeSlots, isSlotBooked } from "../../../helpers/timeslot.helper";
+
 
 // const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
 //     const reservation = await Reservation.create(payload);
@@ -37,8 +40,6 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
   if (!service) {
     throw new Error("Service not found");
   }
-
-  // Check if the time slot is already booked for this date
   const isSlotBooked = service.bookedSlots.some(
     (slot) =>
       slot.date === payload.reservationDate &&
@@ -106,7 +107,9 @@ const updateReservationStatus = async (
   return reservation;
 };
 
-const getAvailableSlots = async (serviceId: string, date: string): Promise<any[]> => {
+
+
+const getAvailableSlots = async (serviceId: string, date: string): Promise<AvailableSlotResponse> => {
   const service = await Service.findById(serviceId);
   if (!service) {
     throw new Error("Service not found");
@@ -114,31 +117,48 @@ const getAvailableSlots = async (serviceId: string, date: string): Promise<any[]
 
   // Get the day of week from date (e.g., "Monday", "Tuesday")
   const dayOfWeek = new Date(date).toLocaleDateString("en-US", { weekday: "long" });
+  const dayOfWeekUpper = dayOfWeek.toUpperCase(); // Convert to uppercase to match your enum
 
-  // Get daily schedule for this day
-  const dailySchedule = service.dailySchedule.find((schedule: any) => schedule.day === dayOfWeek);
+  // Get daily schedule for this day (check both formats)
+  const dailySchedule = service.dailySchedule.find(
+    (schedule) => schedule.day === dayOfWeekUpper || schedule.day === dayOfWeek
+  );
+  
   if (!dailySchedule) {
-    return []; 
+    throw new Error(`No schedule available for ${dayOfWeek}`);
   }
 
+  // Get booked slots for this specific date
   const bookedSlots = service.bookedSlots.filter((slot) => slot.date === date);
 
+  // Generate all possible time slots
+  const allSlots = generateTimeSlots(
+    dailySchedule.start,
+    dailySchedule.end,
+    service.duration
+  );
+
+  // Mark slots as booked or available
+  const slotsWithStatus = allSlots.map((slot) => {
+    const isBooked = isSlotBooked(slot, bookedSlots);
+    return {
+      start: slot.start,
+      end: slot.end,
+      isBooked: isBooked.booked,
+      reservationId: isBooked.reservationId
+    };
+  });
+
   return {
-    dailySchedule,
-    bookedSlots,
-    availableSlots: calculateAvailableSlots(dailySchedule, bookedSlots, service.duration)
+    date,
+    dayOfWeek,
+    scheduleStart: dailySchedule.start,
+    scheduleEnd: dailySchedule.end,
+    serviceDuration: service.duration,
+    slots: slotsWithStatus
   };
 };
 
-// Helper function to calculate available slots
-const calculateAvailableSlots = (schedule: any, bookedSlots: any[], duration: string): any[] => {
-  // Implementation depends on your duration format and logic
-  // This is a placeholder - you'll need to implement the actual slot calculation
-  const availableSlots: any[] = [];
-  // Your logic here to generate time slots based on schedule and duration
-  // Then filter out booked slots
-  return availableSlots;
-};
 
 
 const barberReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<any> => {
@@ -477,5 +497,6 @@ export const ReservationService = {
     respondedReservationFromDB,
     cancelReservationFromDB,
     confirmReservationFromDB,
-    getAvailableSlots
+    getAvailableSlots,
+    updateReservationStatus
 }
