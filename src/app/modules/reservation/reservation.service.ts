@@ -96,7 +96,7 @@ const updateReservationStatus = async (
   await reservation.save();
 
   // If completed or canceled, remove the booked slot from service
-  if (status === "Completed" || status === "Canceled") {
+  if (status === "Completed") {
     await Service.findByIdAndUpdate(reservation.service, {
       $pull: {
         bookedSlots: { reservationId: reservation._id }
