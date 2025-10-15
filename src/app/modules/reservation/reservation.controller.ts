@@ -117,26 +117,26 @@ const confirmReservation = catchAsync(async (req: Request, res: Response) => {
 
 const updateReservationStatus = catchAsync(async (req: Request, res: Response) => {
   const { reservationId, status } = req.query;
-
+  
   if (!reservationId || !status) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "reservationId and status are required");
   }
-
-  // Optionally validate allowed statuses up-front
-  const allowed = ["Completed", "Canceled"];
+  
+  // Validate allowed statuses
+  const allowed = ["Completed", "Canceled", "Accepted"];
   if (!allowed.includes(String(status))) {
     throw new ApiError(StatusCodes.BAD_REQUEST, `status must be one of: ${allowed.join(", ")}`);
   }
-
+  
   const reservation = await ReservationService.updateReservationStatus(
     reservationId as string,
-    status as "Completed" | "Canceled"
+    status as "Completed" | "Canceled" | "Accepted"
   );
-
+  
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: "Reservation status updated successfully",
+    message: `Reservation status updated to ${status} successfully`,
     data: reservation,
   });
 });

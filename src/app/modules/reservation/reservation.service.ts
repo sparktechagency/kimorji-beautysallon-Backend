@@ -13,7 +13,8 @@ import { User } from "../user/user.model";
 import { Service } from "../service/service.model";
 import { string } from "zod";
 import { IBookedSlot } from "../service/service.interface";
-import { AvailableSlotResponse, generateTimeSlots, isSlotBooked } from "../../../helpers/timeslot.helper";
+import { logger } from "../../../shared/logger";
+
 
 
 // const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
@@ -98,26 +99,161 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
   return reservation;
 };
 
+// const updateReservationStatus = async (
+//   reservationId: string,
+//   status: "Completed" | "Canceled" | "Accepted"
+// ): Promise<IReservation | null> => {
+//   logger.info(`Updating reservation ${reservationId} to status: ${status}`);
+  
+//   // Find reservation
+//   const reservation = await Reservation.findById(reservationId);
+//   if (!reservation) {
+//     throw new ApiError(StatusCodes.NOT_FOUND, "Reservation not found");
+//   }
+
+//   logger.info(`Found reservation: ${reservation._id}, current status: ${reservation.status}`);
+
+//   // Update reservation status
+//   reservation.status = status;
+//   await reservation.save();
+
+//   logger.info(`Reservation status updated to: ${status}`);
+
+//   // If completed or canceled, remove the booked slot from service
+//   if (status === "Completed" || status === "Canceled") {
+//     logger.info(`Removing booked slot for reservation: ${reservation._id}`);
+    
+//     // Method 1: Pull by reservationId (more reliable)
+//     const updateResult = await Service.findByIdAndUpdate(
+//       reservation.service,
+//       {
+//         $pull: {
+//           bookedSlots: { 
+//             reservationId: new Types.ObjectId(reservation._id) 
+//           }
+//         }
+//       },
+//       { new: true } // Return updated document
+//     );
+
+//     if (!updateResult) {
+//       logger.error(`Service not found: ${reservation.service}`);
+//       throw new ApiError(StatusCodes.NOT_FOUND, "Service not found");
+//     }
+
+//     logger.info(`Booked slot removed successfully from service: ${reservation.service}`);
+//     logger.debug(`Remaining booked slots: ${JSON.stringify(updateResult.bookedSlots)}`);
+//   }
+
+//   // Populate and return
+//   const populatedReservation = await Reservation.findById(reservation._id)
+//     .populate('barber', 'name email')
+//     .populate('customer', 'name email')
+//     .populate('service', 'title price duration');
+
+//   return populatedReservation as IReservation;
+// };
+
+// Alternative method if above doesn't work
 const updateReservationStatus = async (
   reservationId: string,
-  status: "Completed" | "Canceled"
+  status: "Completed" | "Canceled" | "Accepted"
 ): Promise<IReservation | null> => {
+  logger.info(`Updating reservation ${reservationId} to status: ${status}`);
+  
+  // Find reservation
   const reservation = await Reservation.findById(reservationId);
   if (!reservation) {
-    throw new Error("Reservation not found");
+    throw new ApiError(StatusCodes.NOT_FOUND, "Reservation not found");
+  }
+
+  logger.info(`Found reservation: ${reservation._id}, current status: ${reservation.status}`);
+
+  // Update reservation status
+  reservation.status = status;
+  await reservation.save();
+
+  logger.info(`Reservation status updated to: ${status}`);
+
+  // If completed or canceled, remove the booked slot from service
+  if (status === "Completed" || status === "Canceled") {
+    logger.info(`Removing booked slot for reservation: ${reservation._id}`);
+    
+    // Method 1: Try $pull with date and timeSlot (more reliable)
+    const updateResult = await Service.findByIdAndUpdate(
+      reservation.service,
+      {
+        $pull: {
+          bookedSlots: { 
+            date: reservation.reservationDate,
+            timeSlot: reservation.timeSlot
+          }
+        }
+      },
+      { new: true } // Return updated document
+    );
+
+    if (!updateResult) {
+      logger.error(`Service not found: ${reservation.service}`);
+      throw new ApiError(StatusCodes.NOT_FOUND, "Service not found");
+    }
+
+    logger.info(`Booked slot removed successfully from service: ${reservation.service}`);
+    logger.debug(`Remaining booked slots: ${JSON.stringify(updateResult.bookedSlots)}`);
+  }
+
+  // Populate and return
+  const populatedReservation = await Reservation.findById(reservation._id)
+    .populate('barber', 'name email')
+    .populate('customer', 'name email')
+    .populate('service', 'title price duration');
+
+  return populatedReservation as IReservation;
+};
+
+// Alternative method - Remove by date and timeSlot (RECOMMENDED)
+const updateReservationStatusAlternative = async (
+  reservationId: string,
+  status: "Completed" | "Canceled" | "Accepted"
+): Promise<IReservation | null> => {
+  logger.info(`Updating reservation ${reservationId} to status: ${status}`);
+  
+  const reservation = await Reservation.findById(reservationId);
+  if (!reservation) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Reservation not found");
   }
 
   // Update reservation status
   reservation.status = status;
   await reservation.save();
 
-  // If completed or canceled, remove the booked slot from service
+  // Remove booked slot manually
   if (status === "Completed" || status === "Canceled") {
-    await Service.findByIdAndUpdate(reservation.service, {
-      $pull: {
-        bookedSlots: { reservationId: reservation._id }
+    const service = await Service.findById(reservation.service);
+    
+    if (!service) {
+      throw new ApiError(StatusCodes.NOT_FOUND, "Service not found");
+    }
+
+    logger.info(`Current booked slots: ${service.bookedSlots.length}`);
+    logger.info(`Looking for slot - Date: ${reservation.reservationDate}, TimeSlot: ${reservation.timeSlot}`);
+
+    // Filter out the booked slot by date and timeSlot (safer method)
+    const initialLength = service.bookedSlots.length;
+    service.bookedSlots = service.bookedSlots.filter(
+      (slot) => {
+        // Handle cases where reservationId might be undefined
+        if (slot.reservationId) {
+          return slot.reservationId.toString() !== reservation._id.toString();
+        }
+        // Fallback: match by date and timeSlot
+        return !(slot.date === reservation.reservationDate && slot.timeSlot === reservation.timeSlot);
       }
-    });
+    );
+
+    const removed = initialLength - service.bookedSlots.length;
+    await service.save();
+    logger.info(`Booked slots removed: ${removed}. Remaining slots: ${service.bookedSlots.length}`);
   }
 
   return reservation;

@@ -44,29 +44,29 @@ export const generateTimeSlots = (startTime: string, endTime: string, duration: 
 };
 
 // Helper function to check if a slot is booked
-export const isSlotBooked = (
-  slot: TimeSlot,
-  bookedSlots: IBookedSlot[]
-): { booked: boolean; reservationId?: string } => {
-  for (const booked of bookedSlots) {
-    if (!booked.start || !booked.end) continue; // skip invalid entries
+// export const isSlotBooked = (
+//   slot: TimeSlot,
+//   bookedSlots: IBookedSlot[]
+// ): { booked: boolean; reservationId?: string } => {
+//   for (const booked of bookedSlots) {
+//     if (!booked.start || !booked.end) continue; // skip invalid entries
 
-    const slotStart = timeToMinutes(slot.start);
-    const slotEnd = timeToMinutes(slot.end);
-    const bookedStart = timeToMinutes(booked.start);
-    const bookedEnd = timeToMinutes(booked.end);
+//     const slotStart = timeToMinutes(slot.start);
+//     const slotEnd = timeToMinutes(slot.end);
+//     const bookedStart = timeToMinutes(booked.start);
+//     const bookedEnd = timeToMinutes(booked.end);
 
-    if (
-      (slotStart >= bookedStart && slotStart < bookedEnd) ||
-      (slotEnd > bookedStart && slotEnd <= bookedEnd) ||
-      (slotStart <= bookedStart && slotEnd >= bookedEnd)
-    ) {
-      return { booked: true, reservationId: booked.reservationId.toString() };
-    }
-  }
+//     if (
+//       (slotStart >= bookedStart && slotStart < bookedEnd) ||
+//       (slotEnd > bookedStart && slotEnd <= bookedEnd) ||
+//       (slotStart <= bookedStart && slotEnd >= bookedEnd)
+//     ) {
+//       return { booked: true, reservationId: booked.reservationId.toString() };
+//     }
+//   }
 
-  return { booked: false };
-};
+//   return { booked: false };
+// };
 
 
 // Helper function to parse duration string to minutes
