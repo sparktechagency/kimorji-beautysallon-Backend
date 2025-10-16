@@ -92,7 +92,7 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
         });
 
         // Sort time slots in ascending order
-        timeSlot.sort((a, b) => {
+        timeSlot.sort((a: { split: (arg0: string) => { (): any; new(): any; map: { (arg0: NumberConstructor): [any, any]; new(): any; }; }; }, b: { split: (arg0: string) => { (): any; new(): any; map: { (arg0: NumberConstructor): [any, any]; new(): any; }; }; }) => {
           const [aHour, aMin] = a.split(':').map(Number);
           const [bHour, bMin] = b.split(':').map(Number);
           return (aHour * 60 + aMin) - (bHour * 60 + bMin);
