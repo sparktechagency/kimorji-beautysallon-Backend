@@ -5,6 +5,7 @@ import { ServiceService } from './service.service';
 import fileUploadHandler from '../../middlewares/fileUploaderHandler';
 import ApiError from '../../../errors/ApiError';
 import { logger } from '../../../shared/logger';
+import { PaginatedResult } from '../../../helpers/pagination.interface';
 
 // Create a new service with image upload
 const createService = catchAsync(async (req: Request, res: Response) => {
@@ -112,18 +113,52 @@ const getAllServices = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllServicesbarber = catchAsync(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const total = 0; 
-  const totalPage = 0; 
-  const services = await ServiceService.getAllServices({ page, totalPage, limit, total });
-  res.status(httpStatus.OK).json({
+  // Read query params (accept either ?searchTerm= or ?search=)
+  const pageRaw = req.query.page as string | undefined;
+  const limitRaw = req.query.limit as string | undefined;
+  const searchTerm = (req.query.searchTerm as string) || (req.query.search as string) || undefined;
+
+  let page = 1;
+  let limit = 10;
+
+  if (pageRaw) {
+    const parsed = Number(pageRaw);
+    if (!Number.isNaN(parsed) && parsed > 0) page = Math.floor(parsed);
+  }
+
+  if (limitRaw) {
+    const parsed = Number(limitRaw);
+    if (!Number.isNaN(parsed) && parsed > 0) limit = Math.floor(parsed);
+  }
+
+  // Grab barber id from authenticated user (adjust if your middleware uses a different shape)
+  const barberId = (req as any).user?.id || (req as any).user?._id;
+  if (!barberId) {
+    logger.warn('getAllServicesbarber: missing authenticated barber id on request');
+    return res.status(httpStatus.UNAUTHORIZED).json({
+      success: false,
+      message: 'Authentication required',
+    });
+  }
+
+  logger.info(`Controller: fetching services for barber=${barberId}, page=${page}, limit=${limit}, searchTerm=${searchTerm}`);
+
+  // Ensure barberId passed as string
+const result = await ServiceService.getAllServicesbarber({
+  page,
+  limit,
+  searchTerm,
+  barberId: String(barberId),
+}) as unknown as PaginatedResult; 
+
+  return res.status(httpStatus.OK).json({
     success: true,
     message: 'Services retrieved successfully',
-    data: services,
-    
+    data: result.services,
+    pagination: result.pagination,
   });
 });
+
 
 // Update a service with image upload
 const updateService = catchAsync(async (req: Request, res: Response) => {

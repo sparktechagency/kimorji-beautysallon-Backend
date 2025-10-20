@@ -9,23 +9,9 @@ import { logger } from '../../../shared/logger';
 import { SubCategory } from '../subCategory/subCategory.model';
 import { Day } from '../../../enums/day';
 import { isValidDay, to24Hour } from '../../../helpers/find.offer';
+import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface';
 
-interface PaginationOptions {
-  page: number;
-  limit: number;
-  searchTerm: string;
-  barberId: string;
-}
 
-interface PaginatedResult {
-  services: IService[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPage: number;
-  };
-}
 
 
 const createService = async (payload: Partial<IService>): Promise<IService> => {
@@ -140,6 +126,7 @@ const getAllServices = async (pagination: { page: number, totalPage: number, lim
   const services = await Service.find()
     .populate('category')
     .populate('title')
+    .populate('serviceType')
     .populate('barber');
 
   // Use the pagination values from the argument
@@ -156,13 +143,12 @@ const getAllServices = async (pagination: { page: number, totalPage: number, lim
   };
 };
 
-
 // Get all services with pagination and search
 const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: PaginationOptions): Promise<PaginatedResult> => {
   logger.info(`Starting getAllServices: page=${page}, limit=${limit}, searchTerm=${searchTerm}, barberId=${barberId}`);
 
   // Build query
-  const query: any = { barber: barberId }; // Filter by authenticated barber
+  const query: any = { barber: barberId }; 
   if (searchTerm) {
     const subCategoryIds = await SubCategory.find({
       title: { $regex: searchTerm, $options: 'i' }
@@ -176,19 +162,18 @@ const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: Pagin
   }
 
   try {
-    // Calculate pagination
     const total = await Service.countDocuments(query);
     const totalPage = Math.ceil(total / limit);
     const skip = (page - 1) * limit;
 
-    // Fetch services
     const services = await Service.find(query)
       .populate('category')
       .populate('title')
       .populate('barber')
+      .populate('serviceType')
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }); // Sort by newest first
+      .sort({ createdAt: -1 }); 
 
     logger.info(`Retrieved ${services.length} services, total: ${total}`);
     return {

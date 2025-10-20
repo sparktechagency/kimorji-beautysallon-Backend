@@ -152,7 +152,6 @@ const transferAndPayoutToBarber = async (id: string) => {
             stripeAccount: accountId,
         }
     );
-
     if (payouts.status !== "paid") throw new Error("Failed to complete payout");
 
     if (payouts.status === "paid") {
@@ -173,7 +172,6 @@ const transferAndPayoutToBarber = async (id: string) => {
 
     return;
 }
-
 
 export const PaymentService = {
     createPaymentCheckoutToStripe,
