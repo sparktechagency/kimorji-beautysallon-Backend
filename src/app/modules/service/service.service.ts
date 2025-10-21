@@ -12,8 +12,6 @@ import { isValidDay, to24Hour } from '../../../helpers/find.offer';
 import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface';
 
 
-
-
 const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
   logger.debug(`Service payload: ${JSON.stringify(payload)}`);
@@ -120,7 +118,6 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
   }
 };
 
-
 // Get all services
 const getAllServices = async (pagination: { page: number, totalPage: number, limit: number, total: number }): Promise<{ services: IService[], pagination: { page: number, limit: number, total: number, totalPage: number } }> => {
   const services = await Service.find()
@@ -177,7 +174,7 @@ const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: Pagin
 
     logger.info(`Retrieved ${services.length} services, total: ${total}`);
     return {
-      services,
+      services, 
       pagination: {
         page,
         limit,
@@ -250,4 +247,3 @@ export const ServiceService = {
   deleteService,
   getAllServicesbarber,
 };
-
