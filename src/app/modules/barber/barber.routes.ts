@@ -30,7 +30,6 @@ router.get('/',
     BarberController.getBarberList
 );
 
-
 router.get('/recommended',
     BarberController.recommendedBarber
 );

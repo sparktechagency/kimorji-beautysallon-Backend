@@ -117,7 +117,6 @@ const getCustomerProfileFromDB = async (customer: string): Promise<{}> => {
     return result;
 }
 
-
 const makeDiscountToDB = async (user: JwtPayload, discount: number): Promise<IUser> => {
 
     const updateDoc: any = User.findOneAndUpdate({ _id: user.id }, { discount: discount }, { new: true });
@@ -392,7 +391,6 @@ const getBarberListFromDB = async (user: JwtPayload, query: Record<string, any>)
 
     return data;
 }
-
 
 const barberDetailsFromDB = async (user: JwtPayload): Promise<{}> => {
 

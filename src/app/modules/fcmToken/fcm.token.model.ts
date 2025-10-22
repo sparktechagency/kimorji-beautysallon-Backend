@@ -30,10 +30,8 @@ const deviceTokenSchema = new Schema(
   }
 );
 
-// Add unique compound index to prevent duplicate devices for a user
 deviceTokenSchema.index({ userId: 1, deviceId: 1 }, { unique: true });
 
-// Add index for faster lookups
 deviceTokenSchema.index({ fcmToken: 1 });
 
 const DeviceToken = mongoose.model<IDeviceToken>('DeviceToken', deviceTokenSchema);
