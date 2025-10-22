@@ -77,7 +77,6 @@ const recommendedBarber = catchAsync(async (req: Request, res: Response) => {
     })
 });
 
-
 const getBarberList = catchAsync(async (req: Request, res: Response) => {
     const token = req.body.token;
     let user: any;

@@ -4,30 +4,34 @@ import { IDeviceToken } from './fcm.token.interface';
 
 const deviceTokenSchema = new Schema(
   {
-    userId: {
+userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    fcmToken: {
+  
+fcmToken: {
       type: String,
       required: true,
       trim: true,
     },
-    deviceType: {
+  
+deviceType: {
       type: String,
       enum: ['ios', 'android', 'web'],
       default: 'android',
-    },
-    deviceId: {
+},
+  
+deviceId: {
       type: String,
       required: true,
       trim: true,
-    },
   },
-  {
-    timestamps: true,
-  }
+},
+
+{
+  timestamps: true,
+}
 );
 
 deviceTokenSchema.index({ userId: 1, deviceId: 1 }, { unique: true });

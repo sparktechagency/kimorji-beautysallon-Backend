@@ -18,5 +18,4 @@ const offerSchema = new Schema<IOffer>(
   { timestamps: true }
 );
 
-
 export const Offer = model<IOffer>("Offer", offerSchema);
