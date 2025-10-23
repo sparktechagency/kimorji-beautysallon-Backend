@@ -29,27 +29,51 @@ const getCategories = catchAsync(async (req: Request, res: Response) => {
     })
 })
 
-const getAllSubCategories = catchAsync(async (req: Request, res: Response) => {
-  logger.info('Starting getAllSubCategories request');
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const searchTerm = req.query.searchTerm as string || '';
-  const categoryId = req.query.categoryId as string || ''; 
-  logger.info(`Pagination: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}`);
+// const getAllSubCategories = catchAsync(async (req: Request, res: Response) => {
+//     logger.info('Starting getAllSubCategories request');
+//     const page = parseInt(req.query.page as string) || 1;
+//     const limit = parseInt(req.query.limit as string) || 10;
+//     const searchTerm = req.query.searchTerm as string || '';
+//     const categoryId = req.query.categoryId as string || '';
+//     logger.info(`Pagination: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}`);
 
-  try {
-    const result = await CategoryService.getAllSubCategories({ page, limit, searchTerm, categoryId });
-    logger.info('SubCategories retrieved successfully');
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: 'SubCategories retrieved successfully',
-      data: result,
-    });
-  } catch (error) {
-    logger.error(`Error retrieving subcategories: ${error}`);
-    throw error;
-  }
+//     try {
+//         const result = await CategoryService.getAllSubCategories({ page, limit, searchTerm, categoryId });
+//         logger.info('SubCategories retrieved successfully');
+//         res.status(StatusCodes.OK).json({
+//             success: true,
+//             message: 'SubCategories retrieved successfully',
+//             data: result,
+//         });
+//     } catch (error) {
+//         logger.error(`Error retrieving subcategories: ${error}`);
+//         throw error;
+//     }
+// });
+
+const getAllSubCategories = catchAsync(async (req: Request, res: Response) => {
+    logger.info('Starting getAllSubCategories request');
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const searchTerm = req.query.searchTerm as string || '';
+    const categoryId = req.query.categoryId as string || '';
+    const barberId = req.query.barberId as string || ''; // Add this line
+    logger.info(`Pagination: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}, barberId=${barberId}`);
+
+    try {
+        const result = await CategoryService.getAllSubCategories({ page, limit, searchTerm, categoryId, barberId }); // Update this line
+        logger.info('SubCategories retrieved successfully');
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: 'SubCategories retrieved successfully',
+            data: result,
+        });
+    } catch (error) {
+        logger.error(`Error retrieving subcategories: ${error}`);
+        throw error;
+    }
 });
+
 const updateCategory = catchAsync(async (req: Request, res: Response) => {
     const id = req.params.id
     const updateCategoryData = req.body;

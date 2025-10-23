@@ -34,7 +34,7 @@ const getCategoriesFromDB = async (): Promise<ICategory[]> => {
   return result;
 }
 
- const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: PaginationOptions): Promise<PaginatedResult> => {
+const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: PaginationOptions): Promise<PaginatedResult> => {
   logger.info(`Starting getAllSubCategories: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}`);
 
   // Build query
