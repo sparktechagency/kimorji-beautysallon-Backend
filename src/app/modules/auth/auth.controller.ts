@@ -12,7 +12,7 @@ import { USER_ROLES } from '../../../enums/user';
 //   if (!mobileNumber || !otpCode) {
 //     throw new AppError('Mobile number and OTP code are required', 400);
 //   }
- 
+
 
 //   const result = await verifyOTP({ mobileNumber, otpCode });
 
@@ -25,27 +25,27 @@ import { USER_ROLES } from '../../../enums/user';
 // });
 
 const verifyEmail = catchAsync(async (req: Request, res: Response) => {
-    const { ...verifyData } = req.body;
-    const result = await AuthService.verifyEmailToDB(verifyData);
+  const { ...verifyData } = req.body;
+  const result = await AuthService.verifyEmailToDB(verifyData);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: result.message,
-        data: result.data,
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+    data: result.data,
+  });
 });
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
-    const { ...loginData } = req.body;
-    const result = await AuthService.loginUserFromDB(loginData);
+  const { ...loginData } = req.body;
+  const result = await AuthService.loginUserFromDB(loginData);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'User login successfully',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User login successfully',
+    data: result
+  });
 });
 
 
@@ -88,21 +88,21 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
       deviceToken || '',
       deviceId || '',
       deviceType || '',
-      role as USER_ROLES 
+      role as USER_ROLES
     );
 
     res.status(200).json({
       status: "success",
       message: result.message,
       userId: result.userId,
-    //   accessToken: result.accessToken,
-    //   refreshToken: result.refreshToken
+      //   accessToken: result.accessToken,
+      //   refreshToken: result.refreshToken
     });
   } catch (error) {
     next(error);
   }
 };
- const verifyLoginOTP = async (req: Request, res: Response, next: NextFunction) => {
+const verifyLoginOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mobileNumber, otpCode } = req.body;
 
@@ -123,89 +123,89 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
 };
 
 const forgetPassword = catchAsync(async (req: Request, res: Response) => {
-    const email = req.body.email;
-    const result = await AuthService.forgetPasswordToDB(email);
+  const email = req.body.email;
+  const result = await AuthService.forgetPasswordToDB(email);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Please check your email, we send a OTP!',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Please check your email, we send a OTP!',
+    data: result
+  });
 });
 
 const resetPassword = catchAsync(async (req: Request, res: Response) => {
-    const token = req.headers.authorization;
-    const { ...resetData } = req.body;
-    const result = await AuthService.resetPasswordToDB(token!, resetData);
+  const token = req.headers.authorization;
+  const { ...resetData } = req.body;
+  const result = await AuthService.resetPasswordToDB(token!, resetData);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Password reset successfully',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Password reset successfully',
+    data: result
+  });
 });
 
 const changePassword = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user;
-    const { ...passwordData } = req.body;
-    await AuthService.changePasswordToDB(user, passwordData);
+  const user = req.user;
+  const { ...passwordData } = req.body;
+  await AuthService.changePasswordToDB(user, passwordData);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Password changed successfully',
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Password changed successfully',
+  });
 });
 
 
 const newAccessToken = catchAsync(async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
-    const result = await AuthService.newAccessTokenToUser(refreshToken);
+  const { refreshToken } = req.body;
+  const result = await AuthService.newAccessTokenToUser(refreshToken);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Generate Access Token successfully',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Generate Access Token successfully',
+    data: result
+  });
 });
 
 const socialLogin = catchAsync(async (req: Request, res: Response) => {
-    const result = await AuthService.socialLoginFromDB(req.body);
+  const result = await AuthService.socialLoginFromDB(req.body);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Logged in Successfully',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Logged in Successfully',
+    data: result
+  });
 });
 
 
 const resendVerificationEmail = catchAsync(async (req: Request, res: Response) => {
-    const { email } = req.body;
-    const result = await AuthService.resendVerificationEmailToDB(email);
+  const { email } = req.body;
+  const result = await AuthService.resendVerificationEmailToDB(email);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Generate OTP and send successfully',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Generate OTP and send successfully',
+    data: result
+  });
 });
 
 // delete user
 const deleteUser = catchAsync(async (req: Request, res: Response) => {
-    const result = await AuthService.deleteUserFromDB(req.user, req.body.password);
+  const result = await AuthService.deleteUserFromDB(req.user, req.body.password);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Account Deleted successfully',
-        data: result
-    });
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Account Deleted successfully',
+    data: result
+  });
 });
 
 // const verifyOTP = catchAsync(async (req: Request, res: Response) => {
@@ -221,17 +221,17 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
 // });
 
 export const AuthController = {
-    // verifyMobile,
-    loginUser,
-    forgetPassword,
-    resetPassword,
-    changePassword,
-    newAccessToken,
-    resendVerificationEmail,
-    socialLogin,
-    deleteUser,
-    verifyEmail,
-    login,
-    verifyLoginOTP,
-    // verifyOTP
+  // verifyMobile,
+  loginUser,
+  forgetPassword,
+  resetPassword,
+  changePassword,
+  newAccessToken,
+  resendVerificationEmail,
+  socialLogin,
+  deleteUser,
+  verifyEmail,
+  login,
+  verifyLoginOTP,
+  // verifyOTP
 };

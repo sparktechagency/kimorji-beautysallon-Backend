@@ -19,15 +19,16 @@ export type IUser = {
     _id: any;
     name: string;
     appId?: string;
+    fcmToken?: string;
     role: USER_ROLES;
     mobileNumber?: string;
     email?: string;
     password: string;
     isSubscribed?: boolean;
     location: {};
-    address:string
-    about:string
-    dateOfBirth:string;
+    address: string
+    about: string
+    dateOfBirth: string;
     gender: "Male" | "Female" | "Children" | "Others";
     profile: string;
     tradeLicences?: string;

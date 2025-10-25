@@ -44,6 +44,7 @@ const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: Pagi
       logger.error(`Invalid category ID format: ${categoryId}`);
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid category ID format');
     }
+
     const categoryExists = await Category.findById(categoryId).select('_id');
     if (!categoryExists) {
       logger.error(`Category not found: ${categoryId}`);
@@ -69,6 +70,7 @@ const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: Pagi
       .sort({ createdAt: -1 }); // Sort by newest first
 
     logger.info(`Retrieved ${subCategories.length} subcategories, total: ${total}`);
+
     return {
       subCategories,
       pagination: {

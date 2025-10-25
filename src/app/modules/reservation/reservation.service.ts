@@ -104,7 +104,7 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
 //   status: "Completed" | "Canceled" | "Accepted"
 // ): Promise<IReservation | null> => {
 //   logger.info(`Updating reservation ${reservationId} to status: ${status}`);
-  
+
 //   // Find reservation
 //   const reservation = await Reservation.findById(reservationId);
 //   if (!reservation) {
@@ -122,7 +122,7 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
 //   // If completed or canceled, remove the booked slot from service
 //   if (status === "Completed" || status === "Canceled") {
 //     logger.info(`Removing booked slot for reservation: ${reservation._id}`);
-    
+
 //     // Method 1: Pull by reservationId (more reliable)
 //     const updateResult = await Service.findByIdAndUpdate(
 //       reservation.service,
@@ -160,7 +160,7 @@ const updateReservationStatus = async (
   status: "Completed" | "Canceled" | "Accepted"
 ): Promise<IReservation | null> => {
   logger.info(`Updating reservation ${reservationId} to status: ${status}`);
-  
+
   // Find reservation
   const reservation = await Reservation.findById(reservationId);
   if (!reservation) {
@@ -178,13 +178,13 @@ const updateReservationStatus = async (
   // If completed or canceled, remove the booked slot from service
   if (status === "Completed" || status === "Canceled") {
     logger.info(`Removing booked slot for reservation: ${reservation._id}`);
-    
+
     // Method 1: Try $pull with date and timeSlot (more reliable)
     const updateResult = await Service.findByIdAndUpdate(
       reservation.service,
       {
         $pull: {
-          bookedSlots: { 
+          bookedSlots: {
             date: reservation.reservationDate,
             timeSlot: reservation.timeSlot
           }
@@ -217,7 +217,7 @@ const updateReservationStatusAlternative = async (
   status: "Completed" | "Canceled" | "Accepted"
 ): Promise<IReservation | null> => {
   logger.info(`Updating reservation ${reservationId} to status: ${status}`);
-  
+
   const reservation = await Reservation.findById(reservationId);
   if (!reservation) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Reservation not found");
@@ -230,7 +230,7 @@ const updateReservationStatusAlternative = async (
   // Remove booked slot manually
   if (status === "Completed" || status === "Canceled") {
     const service = await Service.findById(reservation.service);
-    
+
     if (!service) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Service not found");
     }
@@ -333,341 +333,341 @@ const getAvailableSlots = async (serviceId: string, date: string): Promise<Avail
 };
 
 const barberReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<any> => {
-    const { page, limit, status, coordinates } = query;
+  const { page, limit, status, coordinates } = query;
 
-    if (!coordinates) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
-    }
+  if (!coordinates) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
+  }
 
-    const condition: any = {
-        barber: user.id
-    }
+  const condition: any = {
+    barber: user.id
+  }
 
-    if (status) {
-        condition['status'] = status;
-    }
+  if (status) {
+    condition['status'] = status;
+  }
 
-    const pages = parseInt(page as string) || 1;
-    const size = parseInt(limit as string) || 10;
-    const skip = (pages - 1) * size;
+  const pages = parseInt(page as string) || 1;
+  const size = parseInt(limit as string) || 10;
+  const skip = (pages - 1) * size;
 
-    const reservations = await Reservation.find(condition)
-        .populate([
-            {
-                path: 'customer',
-                select: "name location profile address"
-            },
-            {
-                path: 'service',
-                select: "title category ",
-                populate: [
-                    {
-                        path: "title",
-                        select: "title"
-                    },
-                    {
-                        path: "category",
-                        select: "name"
-                    },
-                ]
-            }
-        ])
-        .select("customer service createdAt status tips travelFee appCharge paymentStatus cancelByCustomer price")
-        .skip(skip)
-        .limit(size)
-        .lean();
+  const reservations = await Reservation.find(condition)
+    .populate([
+      {
+        path: 'customer',
+        select: "name location profile address"
+      },
+      {
+        path: 'service',
+        select: "title category ",
+        populate: [
+          {
+            path: "title",
+            select: "title"
+          },
+          {
+            path: "category",
+            select: "name"
+          },
+        ]
+      }
+    ])
+    .select("customer service createdAt status tips travelFee appCharge paymentStatus cancelByCustomer price")
+    .skip(skip)
+    .limit(size)
+    .lean();
 
-    const count = await Reservation.countDocuments(condition);
+  const count = await Reservation.countDocuments(condition);
 
-    // check how many reservation in each status
-    const allStatus = await Promise.all(["Upcoming", "Accepted", "Canceled", "Completed"].map(
-        async (status: string) => {
-            return {
-                status,
-                count: await Reservation.countDocuments({ barber: user.id, status })
-            }
-        })
-    );
+  // check how many reservation in each status
+  const allStatus = await Promise.all(["Upcoming", "Accepted", "Canceled", "Completed"].map(
+    async (status: string) => {
+      return {
+        status,
+        count: await Reservation.countDocuments({ barber: user.id, status })
+      }
+    })
+  );
 
-    const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
-        const distance = await getDistanceFromCoordinates(reservation?.customer?.location?.coordinates, JSON?.parse(coordinates));
-        const report = await Report.findOne({reservation: reservation?._id});
+  const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
+    const distance = await getDistanceFromCoordinates(reservation?.customer?.location?.coordinates, JSON?.parse(coordinates));
+    const report = await Report.findOne({ reservation: reservation?._id });
 
-        const rating = await Review.findOne({ customer: reservation?.customer?._id,  service: reservation?.service?._id }).select("rating").lean();
-        return {
-            ...reservation,
-            report: report || {},
-            rating: rating || {},
-            distance: distance ? distance : {}
-        };
-    }));
+    const rating = await Review.findOne({ customer: reservation?.customer?._id, service: reservation?.service?._id }).select("rating").lean();
+    return {
+      ...reservation,
+      report: report || {},
+      rating: rating || {},
+      distance: distance ? distance : {}
+    };
+  }));
 
-    const data = {
-        reservations: reservationsWithDistance,
-        allStatus
-    }
-    const meta = {
-        page: pages,
-        totalPage: Math.ceil(count / size),
-        total: count,
-        limit: size
-    }
+  const data = {
+    reservations: reservationsWithDistance,
+    allStatus
+  }
+  const meta = {
+    page: pages,
+    totalPage: Math.ceil(count / size),
+    total: count,
+    limit: size
+  }
 
 
-    return { data, meta };
+  return { data, meta };
 }
 
 const customerReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<{}> => {
-    const { page, limit, status } = query;
+  const { page, limit, status } = query;
 
-    // if (!coordinates) {
-    //     throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
-    // }
+  // if (!coordinates) {
+  //     throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
+  // }
 
-    const condition: any = {
-        customer: user.id
-    }
+  const condition: any = {
+    customer: user.id
+  }
 
-    if (status) {
-        condition['status'] = status;
-    }
+  if (status) {
+    condition['status'] = status;
+  }
 
-    const pages = parseInt(page as string) || 1;
-    const size = parseInt(limit as string) || 10;
-    const skip = (pages - 1) * size;
+  const pages = parseInt(page as string) || 1;
+  const size = parseInt(limit as string) || 10;
+  const skip = (pages - 1) * size;
 
-    const reservations:any = await Reservation.find(condition)
-        .populate([
-            {
-                path: 'barber',
-                select: "name location profile discount"
-            },
-            {
-                path: 'service',
-                select: "title category",
-                populate: [
-                    {
-                        path: "title",
-                        select: "title"
-                    },
-                    {
-                        path: "category",
-                        select: "name"
-                    },
-                ]
-            }
-        ])
-        .select("barber service createdAt status travelFee appCharge tips price paymentStatus cancelByCustomer")
-        .skip(skip)
-        .limit(size)
-        .lean();
+  const reservations: any = await Reservation.find(condition)
+    .populate([
+      {
+        path: 'barber',
+        select: "name location profile discount"
+      },
+      {
+        path: 'service',
+        select: "title category",
+        populate: [
+          {
+            path: "title",
+            select: "title"
+          },
+          {
+            path: "category",
+            select: "name"
+          },
+        ]
+      }
+    ])
+    .select("barber service createdAt status travelFee appCharge tips price paymentStatus cancelByCustomer")
+    .skip(skip)
+    .limit(size)
+    .lean();
 
-        const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
-            // const distance = await getDistanceFromCoordinates(reservation?.barber?.location?.coordinates, JSON?.parse(coordinates));
-            const rating = await getRatingForBarber(reservation?.barber?._id);
-            const review = await Review.findOne({ service : reservation?.service?._id, customer: user.id }).select("rating").lean();
-            return {
-                ...reservation,
-                rating: rating,
-                review: review || {},
-                // distance: distance ? distance : {}
-            };
-        }));
+  const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
+    // const distance = await getDistanceFromCoordinates(reservation?.barber?.location?.coordinates, JSON?.parse(coordinates));
+    const rating = await getRatingForBarber(reservation?.barber?._id);
+    const review = await Review.findOne({ service: reservation?.service?._id, customer: user.id }).select("rating").lean();
+    return {
+      ...reservation,
+      rating: rating,
+      review: review || {},
+      // distance: distance ? distance : {}
+    };
+  }));
 
-    const count = await Reservation.countDocuments(condition);
-    const meta = {
-        page: pages,
-        totalPage: Math.ceil(count / size),
-        total: count,
-        limit: size
-    }
+  const count = await Reservation.countDocuments(condition);
+  const meta = {
+    page: pages,
+    totalPage: Math.ceil(count / size),
+    total: count,
+    limit: size
+  }
 
 
-    return { reservations: reservationsWithDistance, meta };
+  return { reservations: reservationsWithDistance, meta };
 }
 
 const reservationSummerForBarberFromDB = async (user: JwtPayload): Promise<{}> => {
 
-    // total earnings
-    const totalEarnings = await Reservation.aggregate([
-        {
-            $match: { barber: user.id }
-        },
-        {
-            $group: {
-                _id: null,
-                totalEarnings: { $sum: "$price" }
-            }
-        }
-    ]);
-
-    // total earnings today
-    const today = new Date();
-    const todayEarnings = await Reservation.aggregate([
-        {
-            $match: { barber: user.id, createdAt: { $gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()) } }
-        },
-        {
-            $group: {
-                _id: null,
-                todayEarnings: { $sum: "$price" }
-            }
-        }
-    ]);
-
-    // total reservations today
-    const todayReservations = await Reservation.countDocuments(
-        {
-            barber: user.id,
-            createdAt: { $gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()) }
-        } as any);
-
-    // total reservations
-    const totalReservations = await Reservation.countDocuments({ barber: user.id } as any);
-
-    const data = {
-        earnings: {
-            total: totalEarnings[0]?.totalEarnings || 0,
-            today: todayEarnings[0]?.todayEarnings || 0,
-        },
-        services: {
-            today: todayReservations,
-            total: totalReservations
-        }
+  // total earnings
+  const totalEarnings = await Reservation.aggregate([
+    {
+      $match: { barber: user.id }
+    },
+    {
+      $group: {
+        _id: null,
+        totalEarnings: { $sum: "$price" }
+      }
     }
+  ]);
 
-    return data;
+  // total earnings today
+  const today = new Date();
+  const todayEarnings = await Reservation.aggregate([
+    {
+      $match: { barber: user.id, createdAt: { $gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()) } }
+    },
+    {
+      $group: {
+        _id: null,
+        todayEarnings: { $sum: "$price" }
+      }
+    }
+  ]);
+
+  // total reservations today
+  const todayReservations = await Reservation.countDocuments(
+    {
+      barber: user.id,
+      createdAt: { $gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()) }
+    } as any);
+
+  // total reservations
+  const totalReservations = await Reservation.countDocuments({ barber: user.id } as any);
+
+  const data = {
+    earnings: {
+      total: totalEarnings[0]?.totalEarnings || 0,
+      today: todayEarnings[0]?.todayEarnings || 0,
+    },
+    services: {
+      today: todayReservations,
+      total: totalReservations
+    }
+  }
+
+  return data;
 }
 
 
 const reservationDetailsFromDB = async (id: string): Promise<{ reservation: IReservation | null, report: any }> => {
 
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
 
-    const reservation: IReservation | null = await Reservation.findById(id)
-        .populate([
-            {
-                path: 'customer',
-                select: "name profile location"
-            },
-            {
-                path: 'service',
-                select: "title category"
-            }
-        ])
-        .select("customer service createdAt status price");
+  const reservation: IReservation | null = await Reservation.findById(id)
+    .populate([
+      {
+        path: 'customer',
+        select: "name profile location"
+      },
+      {
+        path: 'service',
+        select: "title category"
+      }
+    ])
+    .select("customer service createdAt status price");
 
-    if (!reservation) throw new ApiError(StatusCodes.NOT_FOUND, 'Reservation not found');
+  if (!reservation) throw new ApiError(StatusCodes.NOT_FOUND, 'Reservation not found');
 
-    const report = await Report.findOne({ reservation: id }).select("reason");
+  const report = await Report.findOne({ reservation: id }).select("reason");
 
-    return { reservation, report, };
+  return { reservation, report, };
 }
 
 
 const respondedReservationFromDB = async (id: string, status: string): Promise<IReservation | null> => {
 
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
 
-    const updatedReservation = await Reservation.findOneAndUpdate(
-        { _id: id },
-        { status },
-        { new: true }
-    );
-    if (!updatedReservation) throw new ApiError(StatusCodes.NOT_FOUND, 'Failed to update reservation');
+  const updatedReservation = await Reservation.findOneAndUpdate(
+    { _id: id },
+    { status },
+    { new: true }
+  );
+  if (!updatedReservation) throw new ApiError(StatusCodes.NOT_FOUND, 'Failed to update reservation');
 
-    if (updatedReservation?.status === "Accepted") {
-        const data = {
-            text: "Your reservation has been Accepted. Your service will start soon",
-            receiver: updatedReservation.customer,
-            referenceId: id,
-            screen: "RESERVATION"
-        }
-
-        sendNotifications(data);
+  if (updatedReservation?.status === "Accepted") {
+    const data = {
+      text: "Your reservation has been Accepted. Your service will start soon",
+      receiver: updatedReservation.customer,
+      referenceId: id,
+      screen: "RESERVATION"
     }
 
-    if (updatedReservation?.status === "Canceled") {
-        const data = {
-            text: "Your reservation cancel request has been Accepted.",
-            receiver: updatedReservation.customer,
-            referenceId: id,
-            screen: "RESERVATION"
-        }
+    sendNotifications(data);
+  }
 
-        sendNotifications(data);
+  if (updatedReservation?.status === "Canceled") {
+    const data = {
+      text: "Your reservation cancel request has been Accepted.",
+      receiver: updatedReservation.customer,
+      referenceId: id,
+      screen: "RESERVATION"
     }
 
-    return updatedReservation;
+    sendNotifications(data);
+  }
+
+  return updatedReservation;
 }
 
 
 const cancelReservationFromDB = async (id: string): Promise<IReservation | null> => {
 
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
 
-    const updatedReservation = await Reservation.findOneAndUpdate(
-        { _id: id },
-        { cancelByCustomer: true },
-        { new: true }
-    );
+  const updatedReservation = await Reservation.findOneAndUpdate(
+    { _id: id },
+    { cancelByCustomer: true },
+    { new: true }
+  );
 
-    if (!updatedReservation) {
-        throw new ApiError(StatusCodes.NOT_FOUND, 'Failed to update reservation');
-    } else {
-        const data = {
-            text: "A customer has requested to cancel your reservation",
-            receiver: updatedReservation.barber,
-            referenceId: id,
-            screen: "RESERVATION"
-        }
-        sendNotifications(data);
+  if (!updatedReservation) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Failed to update reservation');
+  } else {
+    const data = {
+      text: "A customer has requested to cancel your reservation",
+      receiver: updatedReservation.barber,
+      referenceId: id,
+      screen: "RESERVATION"
     }
+    sendNotifications(data);
+  }
 
-    return updatedReservation;
+  return updatedReservation;
 }
 
 
 const confirmReservationFromDB = async (id: string): Promise<IReservation | null> => {
 
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
 
-    const updatedReservation:any = await Reservation.findOneAndUpdate(
-        { _id: id },
-        { status: "Completed" },
-        { new: true }
-    );
+  const updatedReservation: any = await Reservation.findOneAndUpdate(
+    { _id: id },
+    { status: "Completed" },
+    { new: true }
+  );
 
 
-    //check bank account
-    const isExistAccount = await User.findOne({})
-    if (!isExistAccount) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Sorry, Salon didn't provide bank information. Please tell the salon owner to create a bank account");
+  //check bank account
+  const isExistAccount = await User.findOne({})
+  if (!isExistAccount) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Sorry, Salon didn't provide bank information. Please tell the salon owner to create a bank account");
+  }
+
+  if (updatedReservation) {
+    const data = {
+      text: "A customer has confirm your reservation",
+      receiver: updatedReservation.barber,
+      referenceId: id,
+      screen: "RESERVATION"
     }
+    sendNotifications(data);
+  }
 
-    if (updatedReservation) {
-        const data = {
-            text: "A customer has confirm your reservation",
-            receiver: updatedReservation.barber,
-            referenceId: id,
-            screen: "RESERVATION"
-        }
-        sendNotifications(data);
-    }
-
-    return updatedReservation;
+  return updatedReservation;
 }
 
 
 export const ReservationService = {
-    createReservationToDB,
-    barberReservationFromDB,
-    customerReservationFromDB,
-    reservationSummerForBarberFromDB,
-    reservationDetailsFromDB,
-    respondedReservationFromDB,
-    cancelReservationFromDB,
-    confirmReservationFromDB,
-    getAvailableSlots,
-    updateReservationStatus
+  createReservationToDB,
+  barberReservationFromDB,
+  customerReservationFromDB,
+  reservationSummerForBarberFromDB,
+  reservationDetailsFromDB,
+  respondedReservationFromDB,
+  cancelReservationFromDB,
+  confirmReservationFromDB,
+  getAvailableSlots,
+  updateReservationStatus
 }
