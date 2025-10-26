@@ -57,11 +57,11 @@ const getAllSubCategories = catchAsync(async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const searchTerm = req.query.searchTerm as string || '';
     const categoryId = req.query.categoryId as string || '';
-    const barberId = req.query.barberId as string || ''; // Add this line
+    const barberId = req.query.barberId as string || '';
     logger.info(`Pagination: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}, barberId=${barberId}`);
 
     try {
-        const result = await CategoryService.getAllSubCategories({ page, limit, searchTerm, categoryId, barberId }); // Update this line
+        const result = await CategoryService.getAllSubCategories({ page, limit, searchTerm, categoryId, barberId });
         logger.info('SubCategories retrieved successfully');
         res.status(StatusCodes.OK).json({
             success: true,
@@ -123,7 +123,6 @@ const adminGetCategories = catchAsync(async (req: Request, res: Response) => {
         data: result
     })
 })
-
 
 export const CategoryController = {
     createCategory,

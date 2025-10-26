@@ -72,7 +72,7 @@ const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: Pagi
     logger.info(`Retrieved ${subCategories.length} subcategories, total: ${total}`);
 
     return {
-      subCategories,
+      services: subCategories,
       pagination: {
         page,
         limit,

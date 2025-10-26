@@ -205,10 +205,10 @@ const reservationListFromDB = async (query: Record<string, any>) => {
             select: "title category",
             populate: [
                 {
-                path: 'category',
-                select: "name"
-            }
-        ]
+                    path: 'category',
+                    select: "name"
+                }
+            ]
         }
     ]);
 

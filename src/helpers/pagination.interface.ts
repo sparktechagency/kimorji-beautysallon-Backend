@@ -12,8 +12,7 @@ export interface PaginationOptions {
 
 export interface PaginatedResult<T = any> {
   services: T[];
-  // data: T[];
-  subCategories?: any[]; // optional, if needed
+  subCategories?: any[];
   pagination: {
     page: number;
     limit: number;
