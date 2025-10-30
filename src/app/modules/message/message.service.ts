@@ -7,18 +7,62 @@ import mongoose from 'mongoose';
 import ApiError from '../../../errors/ApiError';
 import { StatusCodes } from 'http-status-codes';
 
-const sendMessageToDB = async (payload: any): Promise<IMessage> => {
+// const sendMessageToDB = async (payload: any): Promise<IMessage> => {
 
-    // save to DB
-    const response = await Message.create(payload);
+//     // save to DB
+//     const response = await Message.create(payload);
 
-    //@ts-ignore
+//     //@ts-ignore
+//     const io = global.io;
+//     if (io) {
+//         io.emit(`getMessage::${payload?.chatId}`, response);
+//     }
+
+//     return response;
+// };
+// sendMessageToDB.ts
+const sendMessageToDB = async (payload: {
+    chatId: string;
+    sender: string;
+    text?: string;
+    offer?: any;
+}): Promise<IMessage> => {
+    // 1) persist message
+    const msg = await Message.create({
+        chatId: payload.chatId,
+        sender: payload.sender,
+        text: payload.text ?? "",
+        offer: payload.offer ?? null,
+    });
+
+    await Chat.findByIdAndUpdate(payload.chatId, { $set: { updatedAt: new Date() } });
+
+    const chat = await Chat.findById(payload.chatId).select("participants").lean<{ participants: string[] } | null>();
+    const participants = chat?.participants ?? [];
+
     const io = global.io;
     if (io) {
-        io.emit(`getMessage::${payload?.chatId}`, response);
+        io.to(`chat:${payload.chatId}`).emit("message:new", {
+            _id: msg._id,
+            chatId: msg.chatId,
+            sender: msg.sender,
+            text: msg.text,
+        });
+
+        io.to(`chat:${payload.chatId}`).emit(`getMessage::${payload.chatId}`, msg);
+
+        const lastMessageSummary = {
+            chatId: payload.chatId,
+            sender: msg.sender,
+        };
+
+        participants.forEach((uid) => {
+            io.to(`user:${uid}`).emit("chat:updated", lastMessageSummary);
+            io.to(`user:${uid}`).emit("badge:chatIncrement", { chatId: payload.chatId });
+        });
     }
 
-    return response;
+    return msg;
 };
 
 const getMessageFromDB = async (user: JwtPayload, id: any, query: Record<string, any>): Promise<{ messages: IMessage[], pagination: any, participant: any }> => {

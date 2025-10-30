@@ -725,6 +725,7 @@ export const AuthService = {
   deleteUserFromDB,
   // verifyOTP,
   verifyEmailToDB,
+  verifyTwilioOTP,
   loginService,
   verifyLoginOTPService
 };
