@@ -5,6 +5,7 @@ import { Morgan } from "./shared/morgan";
 import router from '../src/app/routes';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import handleStripeWebhook from "./webhook/handleStripeWebhook";
+import seedSuperAdmin from "./DB";
 const app = express();
 
 // morgan
@@ -29,8 +30,7 @@ app.use(express.static('uploads'));
 
 //router
 app.use('/api/v1', router);
-
-app.get("/", (req: Request, res: Response)=>{
+app.get("/", (req: Request, res: Response) => {
     res.send("Hey Welcome to the Barber World. How can I assist you");
 })
 
@@ -38,7 +38,7 @@ app.get("/", (req: Request, res: Response)=>{
 app.use(globalErrorHandler);
 
 // handle not found route
-app.use((req: Request, res: Response)=>{
+app.use((req: Request, res: Response) => {
     res.status(StatusCodes.NOT_FOUND).json({
         success: false,
         message: "Not Found",

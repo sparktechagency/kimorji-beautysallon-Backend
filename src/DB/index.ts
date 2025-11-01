@@ -13,13 +13,27 @@ const superUser = {
 };
 
 const seedSuperAdmin = async () => {
-    const isExistSuperAdmin = await User.findOne({
-        role: USER_ROLES.SUPER_ADMIN,
-    });
+    try {
+        if (!superUser.email || !superUser.password) {
+            logger.error(colors.red('❌ ADMIN email/password not provided in config'));
+            return;
+        }
 
-    if (!isExistSuperAdmin) {
-        await User.create(superUser);
+        const isExistSuperAdmin = await User.findOne({
+            role: USER_ROLES.SUPER_ADMIN,
+            // যদি soft delete সিস্টেম থাকে:
+            // isDeleted: false,
+        });
+
+        if (isExistSuperAdmin) {
+            logger.info(colors.yellow('ℹ Super admin already exists, skipping seeding.'));
+            return;
+        }
+
+        await User.create(superUser); // pre-save hooks (e.g., password hash) run here
         logger.info(colors.green('✔ Super admin created successfully!'));
+    } catch (err: any) {
+        logger.error(colors.red(`❌ Failed to seed Super Admin: ${err?.message || err}`));
     }
 };
 

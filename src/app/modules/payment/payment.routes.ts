@@ -4,7 +4,7 @@ import { USER_ROLES } from "../../../enums/user";
 import { PaymentController } from "./payment.controller";
 const router = express.Router();
 
-router.post("/create-payment-checkout", 
+router.post("/create-payment-checkout",
     auth(USER_ROLES.CUSTOMER),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -14,7 +14,7 @@ router.post("/create-payment-checkout",
         } catch (error) {
             return res.status(500).json({ message: "Invalid Price" });
         }
-    }, 
+    },
     PaymentController.createPaymentCheckoutToStripe
 );
 router.get("/create-connected-account", auth(USER_ROLES.BARBER), PaymentController.createAccountToStripe);

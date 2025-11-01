@@ -9,10 +9,10 @@ import multer from 'multer';
 
 const router = express.Router();
 
-router.post('/',auth(USER_ROLES.BARBER) ,ServiceController.createService); 
-router.get('/',auth(USER_ROLES.BARBER) ,ServiceController.getAllServicesbarber);
-router.get('/all' ,ServiceController.getAllServices);
-router.patch('/:id',auth(USER_ROLES.BARBER), ServiceController.updateService);
-router.delete('/:id',auth(USER_ROLES.BARBER), ServiceController.deleteService);
+router.post('/', auth(USER_ROLES.BARBER), ServiceController.createService);
+router.get('/', auth(USER_ROLES.BARBER), ServiceController.getAllServicesbarber);
+router.get('/all', ServiceController.getAllServices);
+router.patch('/:id', auth(USER_ROLES.BARBER), ServiceController.updateService);
+router.delete('/:id', auth(USER_ROLES.BARBER), ServiceController.deleteService);
 
 export const ServiceRoutes = router;

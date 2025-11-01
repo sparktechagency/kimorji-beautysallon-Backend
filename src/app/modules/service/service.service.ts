@@ -10,8 +10,9 @@ import { SubCategory } from '../subCategory/subCategory.model';
 import { Day } from '../../../enums/day';
 import { isValidDay, to24Hour } from '../../../helpers/find.offer';
 import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface';
-
-
+import client from '../../modules/redis/client';
+import Redis from 'ioredis';
+const redis = new Redis();
 const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
   logger.debug(`Service payload: ${JSON.stringify(payload)}`);
@@ -141,53 +142,114 @@ const getAllServices = async (pagination: { page: number, totalPage: number, lim
 };
 
 // Get all services with pagination and search
-const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: PaginationOptions): Promise<PaginatedResult> => {
-  logger.info(`Starting getAllServices: page=${page}, limit=${limit}, searchTerm=${searchTerm}, barberId=${barberId}`);
+// const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: PaginationOptions): Promise<PaginatedResult> => {
+//   logger.info(`Starting getAllServices: page=${page}, limit=${limit}, searchTerm=${searchTerm}, barberId=${barberId}`);
 
-  // Build query
-  const query: any = { barber: barberId }; 
+//   // Build query
+//   const query: any = { barber: barberId };
+//   if (searchTerm) {
+//     const subCategoryIds = await SubCategory.find({
+//       title: { $regex: searchTerm, $options: 'i' }
+//     }).select('_id');
+
+//     query.$or = [
+//       { serviceType: { $regex: searchTerm, $options: 'i' } },
+//       { description: { $regex: searchTerm, $options: 'i' } },
+//       { title: { $in: subCategoryIds } },
+//     ];
+//   }
+
+//   try {
+//     const total = await Service.countDocuments(query);
+//     const totalPage = Math.ceil(total / limit);
+//     const skip = (page - 1) * limit;
+
+//     const services = await Service.find(query)
+//       .populate('category')
+//       .populate('title')
+//       .populate('barber')
+//       .populate('serviceType')
+//       .skip(skip)
+//       .limit(limit)
+//       .sort({ createdAt: -1 });
+
+//     logger.info(`Retrieved ${services.length} services, total: ${total}`);
+//     return {
+//       services,
+//       pagination: {
+//         page,
+//         limit,
+//         total,
+//         totalPage,
+//       },
+//     };
+//   } catch (error) {
+//     logger.error(`Database error retrieving services: ${error}`);
+//     throw error;
+//   }
+// };
+const CACHE_TTL_SECONDS = 300
+
+export const getAllServicesbarber = async ({
+  page,
+  limit,
+  searchTerm,
+  barberId
+}: PaginationOptions): Promise<PaginatedResult> => {
+  const cacheKey = `services:${barberId}:${page}:${limit}:${searchTerm || ''}`
+
+  try {
+    const cached = await redis.get(cacheKey)
+    if (cached) {
+      logger.info(`Cache hit for key ${cacheKey}`)
+      return JSON.parse(cached)
+    }
+  } catch (e) {
+    logger.warn(`Redis get failed: ${e}`)
+  }
+
+  const query: any = { barber: barberId }
+
   if (searchTerm) {
     const subCategoryIds = await SubCategory.find({
       title: { $regex: searchTerm, $options: 'i' }
-    }).select('_id');
-    
+    }).select('_id')
+
     query.$or = [
       { serviceType: { $regex: searchTerm, $options: 'i' } },
       { description: { $regex: searchTerm, $options: 'i' } },
-      { title: { $in: subCategoryIds } },
-    ];
+      { title: { $in: subCategoryIds } }
+    ]
+  }
+
+  const total = await Service.countDocuments(query)
+  const totalPage = Math.ceil(total / limit)
+  const skip = (page - 1) * limit
+
+  const services = await Service.find(query)
+    .populate('category')
+    .populate('title')
+    .populate('barber')
+    .populate('serviceType')
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 })
+    .lean()
+
+  const result: PaginatedResult = {
+    services,
+    pagination: { page, limit, total, totalPage }
   }
 
   try {
-    const total = await Service.countDocuments(query);
-    const totalPage = Math.ceil(total / limit);
-    const skip = (page - 1) * limit;
-
-    const services = await Service.find(query)
-      .populate('category')
-      .populate('title')
-      .populate('barber')
-      .populate('serviceType')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 }); 
-
-    logger.info(`Retrieved ${services.length} services, total: ${total}`);
-    return {
-      services, 
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPage,
-      },
-    };
-  } catch (error) {
-    logger.error(`Database error retrieving services: ${error}`);
-    throw error;
+    await redis.set(cacheKey, JSON.stringify(result), 'EX', CACHE_TTL_SECONDS);
+    logger.info(`Cache set for key ${cacheKey}`)
+  } catch (e) {
+    logger.warn(`Redis set failed: ${e}`)
   }
-};
 
+  return result
+}
 // Update a service
 const updateService = async (id: string, payload: Partial<IService>): Promise<IService | null> => {
   const service = await Service.findById(id);

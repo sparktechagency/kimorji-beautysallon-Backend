@@ -12,7 +12,7 @@ const createService = catchAsync(async (req: Request, res: Response) => {
   logger.info('Starting createService request');
   const barber = req.user?.id;
   logger.info(`Barber ID from token: ${barber}`);
-  
+
   if (!barber) {
     logger.error('Barber ID missing in token');
     throw new ApiError(
@@ -22,7 +22,7 @@ const createService = catchAsync(async (req: Request, res: Response) => {
   }
 
   const upload = fileUploadHandler();
-  
+
   upload(req, res, async (err) => {
     if (err) {
       logger.error(`File upload error: ${err.message}`);
@@ -88,7 +88,7 @@ const createService = catchAsync(async (req: Request, res: Response) => {
       logger.info('Calling ServiceService.createService');
       const service = await ServiceService.createService(serviceData);
       logger.info('Service created successfully');
-      
+
       res.status(httpStatus.CREATED).json({
         success: true,
         message: 'Service created successfully',
@@ -103,12 +103,12 @@ const createService = catchAsync(async (req: Request, res: Response) => {
 
 // Get all services
 const getAllServices = catchAsync(async (req: Request, res: Response) => {
-  const services = await ServiceService.getAllServices( { page: 1, totalPage: 0, limit: 10, total: 0 });
+  const services = await ServiceService.getAllServices({ page: 1, totalPage: 0, limit: 10, total: 0 });
   res.status(httpStatus.OK).json({
     success: true,
     message: 'Services retrieved successfully',
     data: services,
-    
+
   });
 });
 
@@ -144,12 +144,12 @@ const getAllServicesbarber = catchAsync(async (req: Request, res: Response) => {
   logger.info(`Controller: fetching services for barber=${barberId}, page=${page}, limit=${limit}, searchTerm=${searchTerm}`);
 
   // Ensure barberId passed as string
-const result = await ServiceService.getAllServicesbarber({
-  page,
-  limit,
-  searchTerm,
-  barberId: String(barberId),
-}) as unknown as PaginatedResult; 
+  const result = await ServiceService.getAllServicesbarber({
+    page,
+    limit,
+    searchTerm,
+    barberId: String(barberId),
+  }) as unknown as PaginatedResult;
 
   return res.status(httpStatus.OK).json({
     success: true,
