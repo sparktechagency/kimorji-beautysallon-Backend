@@ -224,10 +224,10 @@ userSchema.pre('save', async function (next) {
 
   // Only set isUpdate to true when ALL three fields have values
   user.isUpdate = !!(hasTradelicences && hasProofOwnerId && hasSallonPhoto);
-  this.password = await bcrypt.hash(
-    this.password,
-    Number(config.bcrypt_salt_rounds)
-  );
+  // this.password = await bcrypt.hash(
+  //   this.password,
+  //   Number(config.bcrypt_salt_rounds)
+  // );
 
   next();
 });

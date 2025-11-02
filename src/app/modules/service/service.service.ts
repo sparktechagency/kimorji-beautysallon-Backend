@@ -141,53 +141,7 @@ const getAllServices = async (pagination: { page: number, totalPage: number, lim
   };
 };
 
-// Get all services with pagination and search
-// const getAllServicesbarber = async ({ page, limit, searchTerm, barberId }: PaginationOptions): Promise<PaginatedResult> => {
-//   logger.info(`Starting getAllServices: page=${page}, limit=${limit}, searchTerm=${searchTerm}, barberId=${barberId}`);
 
-//   // Build query
-//   const query: any = { barber: barberId };
-//   if (searchTerm) {
-//     const subCategoryIds = await SubCategory.find({
-//       title: { $regex: searchTerm, $options: 'i' }
-//     }).select('_id');
-
-//     query.$or = [
-//       { serviceType: { $regex: searchTerm, $options: 'i' } },
-//       { description: { $regex: searchTerm, $options: 'i' } },
-//       { title: { $in: subCategoryIds } },
-//     ];
-//   }
-
-//   try {
-//     const total = await Service.countDocuments(query);
-//     const totalPage = Math.ceil(total / limit);
-//     const skip = (page - 1) * limit;
-
-//     const services = await Service.find(query)
-//       .populate('category')
-//       .populate('title')
-//       .populate('barber')
-//       .populate('serviceType')
-//       .skip(skip)
-//       .limit(limit)
-//       .sort({ createdAt: -1 });
-
-//     logger.info(`Retrieved ${services.length} services, total: ${total}`);
-//     return {
-//       services,
-//       pagination: {
-//         page,
-//         limit,
-//         total,
-//         totalPage,
-//       },
-//     };
-//   } catch (error) {
-//     logger.error(`Database error retrieving services: ${error}`);
-//     throw error;
-//   }
-// };
 const CACHE_TTL_SECONDS = 300
 
 export const getAllServicesbarber = async ({
