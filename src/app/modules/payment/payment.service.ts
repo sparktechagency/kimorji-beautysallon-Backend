@@ -104,75 +104,170 @@ const createAccountToStripe = async (user: JwtPayload) => {
 }
 
 // transfer and payout credit
+// const transferAndPayoutToBarber = async (id: string) => {
+
+//     if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
+
+//     const isExistReservation: IReservation | any = await Reservation.findById(id);
+//     if (!isExistReservation) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation doesn't exist!");
+//     }
+
+//     const isExistBarber = await User.isAccountCreated(isExistReservation.barber);
+//     if (!isExistBarber) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Sorry, you are didn't provide bank information. Please create a bank account");
+//     }
+
+//     //check completed payment and barber transfer
+//     if (isExistReservation.status === "Completed" && isExistReservation.paymentStatus === "Paid") {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "The payment has already been transferred to your account.");
+//     }
+
+//     //check completed payment and barber transfer
+//     if (isExistReservation.transfer === true) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "The payment has already been transferred to your account.");
+//     }
+
+//     const { accountId, externalAccountId } = isExistBarber?.accountInformation;
+//     const { price } = isExistReservation;
+
+//     const charge = (parseInt(price.toString()) * 10) / 100;
+//     const amount = parseInt(price.toString()) - charge;
+
+//     const transfer = await stripe.transfers.create({
+//         amount: amount * 100,
+//         currency: "usd",
+//         destination: accountId,
+//     });
+
+//     if (!transfer) throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to transfer payment');
+
+//     const payouts = await stripe.payouts.create(
+//         {
+//             amount: amount * 100,
+//             currency: "usd",
+//             destination: externalAccountId,
+//         },
+//         {
+//             stripeAccount: accountId,
+//         }
+//     );
+//     if (payouts.status !== "paid") throw new Error("Failed to complete payout");
+
+//     if (payouts.status === "paid") {
+//         await Reservation.findOneAndUpdate(
+//             { _id: id },
+//             { transfer: true },
+//             { new: true });
+
+//         const data = {
+//             text: "Congratulations! Your payment has been transferred to your account.",
+//             receiver: isExistReservation.barber,
+//             referenceId: id,
+//             screen: "RESERVATION"
+//         }
+//         sendNotifications(data);
+
+//     }
+
+//     return;
+// }
+
+
+
+//barber or admin can refund this user payment
 const transferAndPayoutToBarber = async (id: string) => {
-
-    if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');
-
-    const isExistReservation: IReservation | any = await Reservation.findById(id);
-    if (!isExistReservation) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation doesn't exist!");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID')
     }
 
-    const isExistBarber = await User.isAccountCreated(isExistReservation.barber);
-    if (!isExistBarber) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Sorry, you are didn't provide bank information. Please create a bank account");
+    const reservation = await Reservation.findById(id)
+    if (!reservation) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation doesn't exist")
     }
 
-    //check completed payment and barber transfer
-    if (isExistReservation.status === "Completed" && isExistReservation.paymentStatus === "Paid") {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "The payment has already been transferred to your account.");
+    const barberId = reservation.barber
+    if (!barberId) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Missing barber on reservation')
     }
 
-    //check completed payment and barber transfer
-    if (isExistReservation.transfer === true) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "The payment has already been transferred to your account.");
+    const barber = await User.findById(barberId).select('accountInformation')
+    if (!barber) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Barber not found')
     }
 
-    const { accountId, externalAccountId } = isExistBarber?.accountInformation;
-    const { price } = isExistReservation;
+    const info = barber.accountInformation || {}
+    if (!info.status) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Bank info not completed. Please create a bank account")
+    }
+    if (!info.accountId || !info.externalAccountId) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Missing accountId or externalAccountId')
+    }
 
-    const charge = (parseInt(price.toString()) * 10) / 100;
-    const amount = parseInt(price.toString()) - charge;
+    if (reservation.transfer === true) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Payment already transferred')
+    }
 
-    const transfer = await stripe.transfers.create({
-        amount: amount * 100,
-        currency: "usd",
-        destination: accountId,
-    });
+    if (reservation.status === 'Completed' && reservation.paymentStatus === 'Paid') {
+        // keep this if it matches your business rule
+        // otherwise rely on reservation.transfer flag only
+        // throwing the same message to avoid duplicate transfers
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Payment already transferred')
+    }
 
-    if (!transfer) throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to transfer payment');
+    const priceNumber = Number(reservation.price || 0)
+    if (!Number.isFinite(priceNumber) || priceNumber <= 0) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid reservation price')
+    }
 
-    const payouts = await stripe.payouts.create(
-        {
-            amount: amount * 100,
-            currency: "usd",
-            destination: externalAccountId,
-        },
-        {
-            stripeAccount: accountId,
+    const platformFee = Math.floor((priceNumber * 10) / 100)
+    const netAmount = priceNumber - platformFee
+    const amountCents = Math.round(netAmount * 100)
+
+    try {
+        const transfer = await stripe.transfers.create({
+            amount: amountCents,
+            currency: 'usd',
+            destination: info.accountId
+        })
+
+        if (!transfer) {
+            throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to transfer payment')
         }
-    );
-    if (payouts.status !== "paid") throw new Error("Failed to complete payout");
 
-    if (payouts.status === "paid") {
-        await Reservation.findOneAndUpdate(
-            { _id: id },
-            { transfer: true },
-            { new: true });
+        const payout = await stripe.payouts.create({
+            amount: amountCents,
+            currency: 'usd',
+            destination: info.externalAccountId
+        }, {
+            stripeAccount: info.accountId
+        })
 
-        const data = {
-            text: "Congratulations! Your payment has been transferred to your account.",
-            receiver: isExistReservation.barber,
-            referenceId: id,
-            screen: "RESERVATION"
+        if (payout.status !== 'paid') {
+            throw new Error('Failed to complete payout')
         }
-        sendNotifications(data);
 
+        if (payout.status === 'paid') {
+            await Reservation.findOneAndUpdate({
+                _id: id
+            }, {
+                transfer: true
+            }, {
+                new: true
+            })
+
+            const data = {
+                text: 'Congratulations! Your payment has been transferred to your account.',
+                receiver: barberId,
+                referenceId: id,
+                screen: 'RESERVATION'
+            }
+            sendNotifications(data)
+        }
+    } catch (error) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, (error as Error).message)
     }
-
-    return;
 }
-
 export const PaymentService = {
     createPaymentCheckoutToStripe,
     createAccountToStripe,

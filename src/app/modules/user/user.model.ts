@@ -165,10 +165,18 @@ userSchema.statics.isExistUserByMobileNumber = async (mobileNumber: string) => {
 };
 
 //account check
+// userSchema.statics.isAccountCreated = async (id: string) => {
+//   const isUserExist: any = await User.findById(id);
+//   return isUserExist.accountInformation.status;
+// };
 userSchema.statics.isAccountCreated = async (id: string) => {
-  const isUserExist: any = await User.findById(id);
-  return isUserExist.accountInformation.status;
-};
+  const user = await User.findById(id).select('accountInformation')
+  return !!(user && user.accountInformation && user.accountInformation.status)
+}
+
+userSchema.statics.getUserAccountInfo = async (id: string) => {
+  return await User.findById(id).select('accountInformation name role')
+}
 
 //is match password
 userSchema.statics.isMatchPassword = async (password: string, hashPassword: string): Promise<boolean> => {
