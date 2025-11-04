@@ -10,7 +10,6 @@ import { SubCategory } from '../subCategory/subCategory.model';
 import { Day } from '../../../enums/day';
 import { isValidDay, to24Hour } from '../../../helpers/find.offer';
 import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface';
-import client from '../../modules/redis/client';
 import Redis from 'ioredis';
 const redis = new Redis();
 const createService = async (payload: Partial<IService>): Promise<IService> => {
