@@ -74,4 +74,7 @@ const getMessageFromDB = async (user: JwtPayload, id: any, query: Record<string,
     return { messages, pagination, participant: participant?.participants[0] };
 };
 
-export const MessageService = { sendMessageToDB, getMessageFromDB };
+export const MessageService = {
+    sendMessageToDB,
+    getMessageFromDB
+};

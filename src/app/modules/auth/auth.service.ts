@@ -532,7 +532,6 @@ const resetPasswordToDB = async (token: string, payload: IAuthResetPassword) => 
   );
 };
 
-
 const changePasswordToDB = async (user: JwtPayload, payload: IChangePassword) => {
 
   const { currentPassword, newPassword, confirmPassword } = payload;
