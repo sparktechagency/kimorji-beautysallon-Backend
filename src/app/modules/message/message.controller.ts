@@ -4,7 +4,7 @@ import sendResponse from '../../../shared/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { MessageService } from './message.service';
 
-const sendMessage = catchAsync(async (req: Request, res: Response) => {;
+const sendMessage = catchAsync(async (req: Request, res: Response) => {
 
     const message = await MessageService.sendMessageToDB(req.body);
     sendResponse(res, {
@@ -29,4 +29,7 @@ const getMessage = catchAsync(async (req: Request, res: Response) => {
 
 });
 
-export const MessageController = { sendMessage, getMessage };
+export const MessageController = {
+    sendMessage,
+    getMessage
+};

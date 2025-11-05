@@ -6,4 +6,5 @@ export type ICategory = {
     categoryId?: string;
 
 }
+
 export type CategoryModel = Model<ICategory, Record<string, unknown>>

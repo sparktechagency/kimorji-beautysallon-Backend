@@ -26,4 +26,4 @@ volumes:
   redis_data:
     driver: local
 
-#docker-compose up -d, docker-compose down
+# docker-compose up -d, docker-compose down

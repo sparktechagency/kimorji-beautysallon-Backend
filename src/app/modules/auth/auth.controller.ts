@@ -70,6 +70,7 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 //     next(error);
 //   }
 // };
+
 const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { mobileNumber, deviceToken, deviceId, role, deviceType } = req.body;
@@ -102,6 +103,7 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
     next(error);
   }
 };
+
 const verifyLoginOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mobileNumber, otpCode } = req.body;

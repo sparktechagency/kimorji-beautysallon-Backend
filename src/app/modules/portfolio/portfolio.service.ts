@@ -31,4 +31,4 @@ export const PortfolioService = {
   createPortfolioToDB,
   portfolioFromDB,
   deletePortfolioToDB,
-};  
+};
