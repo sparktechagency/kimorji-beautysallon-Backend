@@ -7,20 +7,6 @@ import mongoose from 'mongoose';
 import ApiError from '../../../errors/ApiError';
 import { StatusCodes } from 'http-status-codes';
 
-// const sendMessageToDB = async (payload: any): Promise<IMessage> => {
-
-//     // save to DB
-//     const response = await Message.create(payload);
-
-//     //@ts-ignore
-//     const io = global.io;
-//     if (io) {
-//         io.emit(`getMessage::${payload?.chatId}`, response);
-//     }
-
-//     return response;
-// };
-// sendMessageToDB.ts
 const sendMessageToDB = async (payload: {
     chatId: string;
     sender: string;
