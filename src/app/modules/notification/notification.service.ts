@@ -5,7 +5,7 @@ import QueryBuilder from '../../../shared/apiFeature';
 import { query } from 'express';
 
 // get notifications
-const getNotificationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<{notifications: INotification[], pagination:any}> => {
+const getNotificationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<{ notifications: INotification[], pagination: any }> => {
 
     const result = new QueryBuilder(Notification.find({ receiver: user.id }), query).paginate();
     const notifications = await result.queryModel;
