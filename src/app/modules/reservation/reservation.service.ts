@@ -14,6 +14,7 @@ import { Service } from "../service/service.model";
 import { string } from "zod";
 import { IBookedSlot } from "../service/service.interface";
 import { logger } from "../../../shared/logger";
+import { enqueueNotification } from "../queue/notification.queue";
 
 
 
@@ -94,7 +95,9 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     referenceId: reservation._id,
     screen: "RESERVATION"
   };
+  enqueueNotification;
   sendNotifications(data);
+
 
   return reservation;
 };
