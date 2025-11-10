@@ -12,7 +12,6 @@ export type IBookedSlot = {
   reservationId: Types.ObjectId;
 };
 export type IService = {
-  // barber: Types.ObjectId;
   barber: Types.ObjectId | IUser;
   serviceType: ServiceType;
   title: Types.ObjectId;
@@ -33,23 +32,3 @@ export type IService = {
 };
 
 export type ServiceModel = Model<IService, Record<string, unknown>>;
-
-//     barber: Types.ObjectId;
-//     serviceType: ServiceType;
-//     title: Types.ObjectId;
-//     category: Types.ObjectId;
-//     image: String;
-//     transportFee: Number;
-//     dailySchedule: String[];
-//     price: number;
-//     duration: String;
-//     description: String;
-//     gender: "Male" | "Female" | "Children" | "Others";
-//     isOffered: Boolean;
-//     parcent: number,
-//     rating: Number;
-//     // bookedSlots: Types.ObjectId
-//     status: "Active" | "Inactive";
-//     totalRating: Number;
-// }
-// export type ServiceModel = Model<IService, Record<string, unknown>>;

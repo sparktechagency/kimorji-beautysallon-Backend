@@ -51,7 +51,7 @@ const serviceSchema = new Schema<IService, ServiceModel>(
     totalRating: { type: Number, default: 0 },
     isOffered: { type: Boolean, default: false },
     parcent: { type: Number, required: false },
-    bookedSlots: { type: [bookedSlotSchema], default: [] }, // Enable this field
+    bookedSlots: { type: [bookedSlotSchema], default: [] }, 
     status: {
       type: String,
       enum: ["Active", "Inactive"],

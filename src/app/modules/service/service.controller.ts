@@ -101,16 +101,7 @@ const createService = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Get all services
-// const getAllServices = catchAsync(async (req: Request, res: Response) => {
-//   const services = await ServiceService.getAllServices({ page: 1, totalPage: 0, limit: 10, total: 0 });
-//   res.status(httpStatus.OK).json({
-//     success: true,
-//     message: 'Services retrieved successfully',
-//     data: services,
 
-//   });
-// });
 const getAllServices = catchAsync(async (req: Request, res: Response) => {
   const user = req.user; // injected by auth middleware
   if (!user?.location?.coordinates) {
