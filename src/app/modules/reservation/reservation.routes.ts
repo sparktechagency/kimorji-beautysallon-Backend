@@ -27,7 +27,7 @@ router.route("/")
         ReservationController.createReservation
     )
     .get(
-        auth(USER_ROLES.CUSTOMER), 
+        auth(USER_ROLES.CUSTOMER),
         ReservationController.customerReservation,
     );
 
@@ -46,7 +46,7 @@ router.get("/barber-summery",
 );
 
 router.patch("/confirm/:id",
-    auth(USER_ROLES.CUSTOMER),
+    auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
     ReservationController.confirmReservation
 )
 
@@ -64,7 +64,7 @@ router.route("/:id")
         ReservationController.respondedReservation
     )
     .delete(
-        auth(USER_ROLES.CUSTOMER),
+        auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
         ReservationController.cancelReservation
     );
 
