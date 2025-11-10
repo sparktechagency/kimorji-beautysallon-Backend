@@ -16,21 +16,21 @@ import { AppError } from "../../../errors/error.app";
 
 const createAdminToDB = async (payload: any): Promise<IUser> => {
 
-    // check admin is exist or not;
-    const isExistAdmin = await User.findOne({ email: payload.email })
-    if (isExistAdmin) {
-        throw new ApiError(StatusCodes.CONFLICT, "This Email already taken");
-    }
+  // check admin is exist or not;
+  const isExistAdmin = await User.findOne({ email: payload.email })
+  if (isExistAdmin) {
+    throw new ApiError(StatusCodes.CONFLICT, "This Email already taken");
+  }
 
-    // create admin to db
-    const createAdmin = await User.create(payload);
-    if (!createAdmin) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create Admin');
-    } else {
-        await User.findByIdAndUpdate({ _id: createAdmin?._id }, { verified: true }, { new: true });
-    }
+  // create admin to db
+  const createAdmin = await User.create(payload);
+  if (!createAdmin) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create Admin');
+  } else {
+    await User.findByIdAndUpdate({ _id: createAdmin?._id }, { verified: true }, { new: true });
+  }
 
-    return createAdmin;
+  return createAdmin;
 }
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
@@ -68,40 +68,40 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
 
 
 const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
-    const { id } = user;
-    const isExistUser: any = await User.findById(id).lean();
-    if (!isExistUser) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  const { id } = user;
+  const isExistUser: any = await User.findById(id).lean();
+  if (!isExistUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  const holderStatus = await Service.findOne({ barber: user.id, status: "Inactive" });
+
+  const totalServiceCount = await Reservation.countDocuments({ customer: user.id, status: "Completed", paymentStatus: "Paid" });
+
+  const totalSpend = await Reservation.aggregate([
+    {
+      $match: {
+        customer: user.id,
+        status: "Completed",
+        paymentStatus: "Paid"
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalSpend: { $sum: "$price" }
+      }
     }
+  ]);
 
-    const holderStatus = await Service.findOne({barber: user.id, status: "Inactive"});
+  const data = {
+    ...isExistUser,
+    totalServiceCount,
+    hold: !!holderStatus,
+    totalSpend: totalSpend[0]?.totalSpend || 0
+  }
 
-    const totalServiceCount = await Reservation.countDocuments({ customer: user.id, status: "Completed", paymentStatus: "Paid" });
-
-    const totalSpend = await Reservation.aggregate([
-        {
-            $match: {
-                customer: user.id,
-                status: "Completed",
-                paymentStatus: "Paid"
-            }
-        },
-        {
-            $group: {
-                _id: null,
-                totalSpend: { $sum: "$price" }
-            }
-        }
-    ]);
-
-    const data = {
-        ...isExistUser,
-        totalServiceCount,
-        hold: !!holderStatus,
-        totalSpend: totalSpend[0]?.totalSpend || 0
-    }
-
-    return data;
+  return data;
 };
 
 // const updateProfileToDB = async (user: JwtPayload, payload: Partial<IUser>): Promise<Partial<IUser | null>> => {
@@ -127,11 +127,11 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
 //     return updateDoc;
 // };
 const updateProfileToDB = async (
-  user: JwtPayload, 
+  user: JwtPayload,
   payload: Partial<IUser>
 ): Promise<Partial<IUser | null>> => {
   const { id } = user;
-  
+
   // Check if user exists
   const existingUser = await User.isExistUserById(id);
   if (!existingUser) {
@@ -140,7 +140,7 @@ const updateProfileToDB = async (
 
   // Handle file cleanup for updated files
   const fileFields = ['profile', 'tradeLicences', 'sallonPhoto', 'proofOwnerId'];
-  
+
   for (const field of fileFields) {
     if (payload[field as keyof IUser] && existingUser[field as keyof IUser]) {
       // Unlink old file if new file is being uploaded
@@ -159,9 +159,9 @@ const updateProfileToDB = async (
   }
 
   Object.assign(userToUpdate, payload);
-  
+
   const updatedUser = await userToUpdate.save();
-  
+
   // Remove password from response
   const { password, ...userWithoutPassword } = updatedUser.toObject();
 
@@ -170,28 +170,28 @@ const updateProfileToDB = async (
 
 const updateLocationToDB = async (user: JwtPayload, payload: { longitude: number; latitude: number }): Promise<IUser | null> => {
 
-    const result = await User.findByIdAndUpdate(
-        user.id,
-        {
-            $set: {
-                "location.type": "Point",
-                "location.coordinates": [payload.longitude, payload.latitude]
-            }
-        },
-        { new: true }
-    );
+  const result = await User.findByIdAndUpdate(
+    user.id,
+    {
+      $set: {
+        "location.type": "Point",
+        "location.coordinates": [payload.longitude, payload.latitude]
+      }
+    },
+    { new: true }
+  );
 
-    if (!result) {
-        throw new ApiError(StatusCodes.NOT_FOUND, "Failed to update user location");
-    }
+  if (!result) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Failed to update user location");
+  }
 
-    return result;
+  return result;
 };
 
 export const UserService = {
-    createUserToDB,
-    getUserProfileFromDB,
-    updateProfileToDB,
-    createAdminToDB,
-    updateLocationToDB
+  createUserToDB,
+  getUserProfileFromDB,
+  updateProfileToDB,
+  createAdminToDB,
+  updateLocationToDB
 };
