@@ -5,8 +5,8 @@ export interface IOffer extends Document {
   title?: string;
   percent: number;
   days: string[];
-  startTime: string;
-  endTime: string;
+  startTime: Date;
+  endTime: Date;
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;

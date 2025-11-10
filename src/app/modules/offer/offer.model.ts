@@ -13,11 +13,18 @@ const offerSchema = new Schema<IOffer>(
       enum: Object.values(Day),
       required: true
     }],
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
+    startTime: { type: Date, required: true },
+    endTime: { type: Date, required: true },
+
     isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
+
+offerSchema.post("save", async function (offer) {
+  if (offer.isActive) {
+    await Service.findByIdAndUpdate(offer.service, { isOfferActive: true });
+  }
+});
 
 export const Offer = model<IOffer>("Offer", offerSchema);

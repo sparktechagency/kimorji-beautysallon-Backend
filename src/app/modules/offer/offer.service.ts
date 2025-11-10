@@ -52,8 +52,8 @@ const addOfferToDB = async (
     existingOffer.title = title ?? existingOffer.title;
     existingOffer.percent = percent;
     existingOffer.days = days;
-    existingOffer.startTime = s;
-    existingOffer.endTime = e;
+    existingOffer.startTime = new Date(s);
+    existingOffer.endTime = new Date(e);
     existingOffer.isActive = isActive ?? true;
 
     offer = await existingOffer.save();
@@ -71,7 +71,7 @@ const addOfferToDB = async (
   }
 
   // Update the Service document with discount info
-  await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true, parcent:offer.percent } });
+  await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true, parcent: offer.percent } });
 
   return offer;
 };
@@ -94,8 +94,9 @@ const findOfferForServiceAt = async (serviceId: string | Types.ObjectId, datetim
 
   for (const o of offers) {
     try {
-      const start = typeof o.startTime === "string" ? hhmmToMinutes(o.startTime) : o.startTime;
-      const end = typeof o.endTime === "string" ? hhmmToMinutes(o.endTime) : o.endTime;
+      const start = typeof o.startTime === "string" ? hhmmToMinutes(o.startTime) : new Date(o.startTime).getTime();
+      const end = typeof o.endTime === "string" ? hhmmToMinutes(o.endTime) : new Date(o.endTime).getTime();
+
       if (timeInRange(minute, start, end)) {
         if (!best || o.percent > best.percent) best = o;
       }
@@ -109,16 +110,16 @@ const findOfferForServiceAt = async (serviceId: string | Types.ObjectId, datetim
 
 
 //get all offers
- const getAllOffers = async () => {
+const getAllOffers = async () => {
   const offers = await Offer.find().populate('service');
   return offers;
 }
 
 
 export const offerService = {
-    addOfferToDB,
-    findOfferForServiceAt,
-    getAllOffers
+  addOfferToDB,
+  findOfferForServiceAt,
+  getAllOffers
 
 };
 

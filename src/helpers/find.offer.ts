@@ -10,7 +10,7 @@ import { Day } from "../enums/day";
 /**
  * Helpers
  */
-const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 /** Convert "09:00 AM" or "09:00" to "HH:mm" 24-hour string */
 // export function to24Hour(timeStr: string): string {
@@ -82,7 +82,7 @@ function hhmmToMinutes(hhmm: string): number {
 /** Check if a given time (minutes) falls inside range start..end.
  * supports ranges where end < start (overnight) if needed.
  */
- function timeInRanges(minute: number, start: string, end: string): boolean {
+function timeInRanges(minute: number, start: string, end: string): boolean {
   const s = hhmmToMinutes(start);
   const e = hhmmToMinutes(end);
   if (s <= e) return minute >= s && minute < e;
@@ -91,12 +91,12 @@ function hhmmToMinutes(hhmm: string): number {
 }
 
 export function timeInRange(minute: number, startTime: number, endTime: number): boolean {
-    if (startTime <= endTime) {
-        return minute >= startTime && minute < endTime;
-    } else {
-        // Handles overnight ranges (e.g., 22:00-02:00)
-        return minute >= startTime || minute < endTime;
-    }
+  if (startTime <= endTime) {
+    return minute >= startTime && minute < endTime;
+  } else {
+    // Handles overnight ranges (e.g., 22:00-02:00)
+    return minute >= startTime || minute < endTime;
+  }
 }
 
 /**
@@ -116,8 +116,8 @@ async function findOfferForServiceAt(serviceId: Types.ObjectId | string, datetim
   let best: (typeof offers)[0] | null = null;
   for (const o of offers) {
     try {
-      const s = o.startTime;
-      const e = o.endTime;
+      const s = o.startTime.toISOString();
+      const e = o.endTime.toISOString();
       if (timeInRanges(minutes, s, e)) {
         if (!best || o.percent > best.percent) best = o;
       }

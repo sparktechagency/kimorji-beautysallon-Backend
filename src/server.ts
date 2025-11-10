@@ -6,6 +6,7 @@ import colors from 'colors';
 import { socketHelper } from "./helpers/socketHelper";
 import { Server } from "socket.io";
 import seedSuperAdmin from "./DB";
+import { startInAppCron } from "./app/modules/jobs/offerExpiration";
 
 //uncaught exception
 process.on('uncaughtException', error => {
@@ -60,7 +61,7 @@ async function main() {
 }
 
 main();
-
+startInAppCron();
 //SIGTERM
 process.on('SIGTERM', () => {
     logger.info('SIGTERM IS RECEIVE');
