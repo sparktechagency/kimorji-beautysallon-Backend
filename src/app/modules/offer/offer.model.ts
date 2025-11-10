@@ -23,8 +23,9 @@ const offerSchema = new Schema<IOffer>(
 
 offerSchema.post("save", async function (offer) {
   if (offer.isActive) {
-    await Service.findByIdAndUpdate(offer.service, { isOfferActive: true });
+    await Service.findByIdAndUpdate(offer.service, { isOffered: true, parcent: offer.percent });
   }
 });
+
 
 export const Offer = model<IOffer>("Offer", offerSchema);

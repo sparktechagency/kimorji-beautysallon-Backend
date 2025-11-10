@@ -33,44 +33,31 @@ const addOfferToDB = async (
 
   const { percent, days, startTime, endTime, title, isActive } = payload;
 
-  if (typeof percent !== "number" || percent <= 0 || percent > 100) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "percent must be a number between 1 and 100");
-  }
-  if (!Array.isArray(days) || days.length === 0) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "days required");
-  }
-
-  const s = to24Hour(startTime);
-  const e = to24Hour(endTime);
-
   const existingOffer = await Offer.findOne({ service: serviceId, isActive: true });
 
   let offer;
 
   if (existingOffer) {
-    // Update existing offer
     existingOffer.title = title ?? existingOffer.title;
     existingOffer.percent = percent;
     existingOffer.days = days;
-    existingOffer.startTime = new Date(s);
-    existingOffer.endTime = new Date(e);
+    existingOffer.startTime = new Date(startTime);
+    existingOffer.endTime = new Date(endTime);
     existingOffer.isActive = isActive ?? true;
 
     offer = await existingOffer.save();
   } else {
-    // Create new offer
     offer = await Offer.create({
       service: serviceId,
       title,
       percent,
       days,
-      startTime: s,
-      endTime: e,
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
       isActive: !!isActive
     });
   }
 
-  // Update the Service document with discount info
   await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true, parcent: offer.percent } });
 
   return offer;
