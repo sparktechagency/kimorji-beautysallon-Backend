@@ -124,7 +124,7 @@ const getAllServices = async (pagination: { page: number, totalPage: number, lim
     .populate('category')
     .populate('title')
     .populate('serviceType')
-    .populate('barber');
+    .populate('barber', 'name email profile, contact, location');
 
   // Use the pagination values from the argument
   const { page, limit, total, totalPage } = pagination;
