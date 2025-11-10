@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 import { IBookedSlot, IScheduleItem, IService, ServiceModel } from "./service.interface";
 import { ServiceType } from "../../../enums/serviceType";
 import { Day } from "../../../enums/day";
@@ -46,6 +46,7 @@ const serviceSchema = new Schema<IService, ServiceModel>(
       required: false
     },
     barber: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
     rating: { type: Number, default: 0 },
     totalRating: { type: Number, default: 0 },
     isOffered: { type: Boolean, default: false },

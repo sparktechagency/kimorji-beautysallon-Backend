@@ -1,5 +1,6 @@
 import { Model, Types } from "mongoose";
 import { ServiceType } from "../../../enums/serviceType";
+import { IUser } from "../user/user.interface";
 export type IScheduleItem = {
   day: string;
   timeSlot: string[]; // Array of time slots like ["09:00", "10:00", "11:00"]
@@ -11,7 +12,8 @@ export type IBookedSlot = {
   reservationId: Types.ObjectId;
 };
 export type IService = {
-  barber: Types.ObjectId;
+  // barber: Types.ObjectId;
+  barber: Types.ObjectId | IUser;
   serviceType: ServiceType;
   title: Types.ObjectId;
   category: Types.ObjectId;

@@ -11,6 +11,7 @@ import { Day } from '../../../enums/day';
 import { isValidDay, to24Hour } from '../../../helpers/find.offer';
 import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface';
 import Redis from 'ioredis';
+import { getDistanceFromLatLonInKm } from '../../../helpers/geocode.map';
 const redis = new Redis();
 const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
@@ -118,28 +119,37 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
   }
 };
 
-// Get all services
-const getAllServices = async (pagination: { page: number, totalPage: number, limit: number, total: number }): Promise<{ services: IService[], pagination: { page: number, limit: number, total: number, totalPage: number } }> => {
+const getAllServices = async (
+  pagination: { page: number; totalPage: number; limit: number; total: number },
+  userCoordinates: { lat: number; lng: number }
+) => {
   const services = await Service.find()
     .populate('category')
     .populate('title')
     .populate('serviceType')
-    .populate('barber', 'name email profile, contact, location');
+    .populate('barber', 'name email profile contact location');
 
-  // Use the pagination values from the argument
+  const servicesWithDistance = services.map(service => {
+    const barber = service.barber as any;
+
+    if (barber?.location?.coordinates) {
+      const [barberLng, barberLat] = barber.location.coordinates;
+      const distance = getDistanceFromLatLonInKm(
+        userCoordinates.lat,
+        userCoordinates.lng,
+        barberLat,
+        barberLng
+      );
+      return { ...service.toObject(), distance };
+    }
+
+    return { ...service.toObject(), distance: null };
+  });
+
+
   const { page, limit, total, totalPage } = pagination;
-
-  return {
-    services,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPage,
-    },
-  };
+  return { services: servicesWithDistance, pagination: { page, limit, total, totalPage } };
 };
-
 
 const CACHE_TTL_SECONDS = 300
 
