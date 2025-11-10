@@ -24,11 +24,13 @@ export type IService = {
   description: string;
   gender: "Male" | "Female" | "Children" | "Others";
   isOffered: boolean;
-  parcent: number;
+  // parcent: number;
   rating: number;
   bookedSlots: IBookedSlot[];
   status: "Active" | "Inactive";
   totalRating: number;
+  getActiveOffers(): Promise<any[]>;
+  getDiscountForTimeSlot(timeSlot: string, day?: string): Promise<number>;
 };
 
 export type ServiceModel = Model<IService, Record<string, unknown>>;

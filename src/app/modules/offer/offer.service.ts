@@ -1,3 +1,4 @@
+import { TimeSlot } from './../../../helpers/timeslot.helper';
 import { StatusCodes } from "http-status-codes";
 import { Types } from "mongoose";
 import ApiError from "../../../errors/ApiError";
@@ -16,12 +17,60 @@ const WEEKDAYS: Day[] = [
   Day.SATURDAY
 ];
 
+// const addOfferToDB = async (
+//   serviceId: string,
+//   payload: {
+//     title?: string;
+//     percent: number;
+//     days: string[];
+//     TimeSlot: TimeSlot[];
+//     startTime: string;
+//     endTime: string;
+//     isActive?: boolean;
+//   }
+// ) => {
+//   if (!Types.ObjectId.isValid(serviceId)) {
+//     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid service id");
+//   }
+
+//   const { percent, days, TimeSlot, startTime, endTime, title, isActive } = payload;
+
+//   const existingOffer = await Offer.findOne({ service: serviceId, isActive: true });
+
+//   let offer;
+
+//   if (existingOffer) {
+//     existingOffer.title = title ?? existingOffer.title;
+//     existingOffer.percent = percent;
+//     existingOffer.days = days;
+//     existingOffer.startTime = new Date(startTime);
+//     existingOffer.endTime = new Date(endTime);
+//     existingOffer.isActive = isActive ?? true;
+
+//     offer = await existingOffer.save();
+//   } else {
+//     offer = await Offer.create({
+//       service: serviceId,
+//       title,
+//       percent,
+//       days,
+//       startTime: new Date(startTime),
+//       endTime: new Date(endTime),
+//       isActive: !!isActive
+//     });
+//   }
+
+//   await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true, parcent: offer.percent } });
+
+//   return offer;
+// };
 const addOfferToDB = async (
   serviceId: string,
   payload: {
     title?: string;
     percent: number;
     days: string[];
+    timeSlots: string[];
     startTime: string;
     endTime: string;
     isActive?: boolean;
@@ -31,38 +80,34 @@ const addOfferToDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid service id");
   }
 
-  const { percent, days, startTime, endTime, title, isActive } = payload;
+  const { percent, days, timeSlots, startTime, endTime, title, isActive } = payload;
 
-  const existingOffer = await Offer.findOne({ service: serviceId, isActive: true });
+  console.log('Creating offer with:', {
+    serviceId,
+    days,
+    timeSlots,
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    now: new Date()
+  });
 
-  let offer;
+  // Create new offer (don't update existing for now to avoid confusion)
+  const offer = await Offer.create({
+    service: serviceId,
+    title,
+    percent,
+    days,
+    timeSlots,
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    isActive: isActive ?? true
+  });
 
-  if (existingOffer) {
-    existingOffer.title = title ?? existingOffer.title;
-    existingOffer.percent = percent;
-    existingOffer.days = days;
-    existingOffer.startTime = new Date(startTime);
-    existingOffer.endTime = new Date(endTime);
-    existingOffer.isActive = isActive ?? true;
+  console.log('Offer created:', offer);
 
-    offer = await existingOffer.save();
-  } else {
-    offer = await Offer.create({
-      service: serviceId,
-      title,
-      percent,
-      days,
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
-      isActive: !!isActive
-    });
-  }
-
-  await Service.findByIdAndUpdate(serviceId, { $set: { isOffered: true, parcent: offer.percent } });
-
+  // The post-save hook will update the service
   return offer;
 };
-
 /**
  * Find the best offer (highest percent) for service at a given Date (server local)
  */

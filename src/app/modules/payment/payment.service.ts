@@ -27,7 +27,7 @@ const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Pr
         line_items: [
             {
                 price_data: {
-                    currency: "usd",
+                    currency: "AED",
                     product_data: {
                         name: `${service_name} Service Reservation Payment`,
                     },
