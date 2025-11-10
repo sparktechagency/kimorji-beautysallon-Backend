@@ -7,7 +7,7 @@ import ApiError from '../../../errors/ApiError';
 import { logger } from '../../../shared/logger';
 import { PaginatedResult } from '../../../helpers/pagination.interface';
 
-// Create a new service with image upload
+//pass values stringyfy when used form data values or when used body json not need
 const createService = catchAsync(async (req: Request, res: Response) => {
   logger.info('Starting createService request');
   const barber = req.user?.id;

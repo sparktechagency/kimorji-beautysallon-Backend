@@ -26,6 +26,42 @@ offerSchema.post("save", async function (offer) {
     await Service.findByIdAndUpdate(offer.service, { isOffered: true, parcent: offer.percent });
   }
 });
+offerSchema.post("save", async function (offer) {
+  if (offer.isActive) {
+    // When activating an offer, set service to offered
+    await Service.findByIdAndUpdate(offer.service, {
+      isOffered: true,
+      parcent: offer.percent
+    });
+  } else {
+    // When deactivating an offer, check if there are other active offers
+    const otherActiveOffers = await Offer.countDocuments({
+      service: offer.service,
+      isActive: true,
+      _id: { $ne: offer._id }
+    });
+
+    if (otherActiveOffers === 0) {
+      // No other active offers, deactivate service offer
+      await Service.findByIdAndUpdate(offer.service, {
+        isOffered: false,
+        parcent: 0
+      });
+    } else {
+      // Update to highest percent from remaining offers
+      const highestOffer = await Offer.findOne({
+        service: offer.service,
+        isActive: true
+      }).sort({ percent: -1 });
+
+      if (highestOffer) {
+        await Service.findByIdAndUpdate(offer.service, {
+          parcent: highestOffer.percent
+        });
+      }
+    }
+  }
+});
 
 
 export const Offer = model<IOffer>("Offer", offerSchema);
