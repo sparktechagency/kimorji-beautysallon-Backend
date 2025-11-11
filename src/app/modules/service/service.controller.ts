@@ -132,7 +132,6 @@ const getAllServices = catchAsync(async (req: Request, res: Response) => {
 
   const [lng, lat] = req.user.location.coordinates;
 
-  // Extract query parameters
   const {
     page = 1,
     limit = 10,
