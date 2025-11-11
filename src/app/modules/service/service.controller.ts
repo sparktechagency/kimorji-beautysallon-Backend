@@ -102,16 +102,70 @@ const createService = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+// const getAllServices = catchAsync(async (req: Request, res: Response) => {
+//   const user = req.user;
+//   if (!user?.location?.coordinates) {
+//     return res.status(400).json({ success: false, message: 'User location not available' });
+//   }
+
+//   const [lng, lat] = req.user.location.coordinates;
+//   const services = await ServiceService.getAllServices(
+//     { page: 1, totalPage: 0, limit: 10, total: 0 },
+//     { lat, lng }
+//   );
+
+//   res.status(httpStatus.OK).json({
+//     success: true,
+//     message: 'Services retrieved successfully',
+//     data: services,
+//   });
+// });
+// Controller
 const getAllServices = catchAsync(async (req: Request, res: Response) => {
-  const user = req.user; // injected by auth middleware
+  const user = req.user;
   if (!user?.location?.coordinates) {
-    return res.status(400).json({ success: false, message: 'User location not available' });
+    return res.status(400).json({
+      success: false,
+      message: 'User location not available'
+    });
   }
 
   const [lng, lat] = req.user.location.coordinates;
+
+  // Extract query parameters
+  const {
+    page = 1,
+    limit = 10,
+    searchTerm = '',
+    minPrice,
+    maxPrice,
+    category,
+    title,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = req.query;
+
+  const filters = {
+    search: searchTerm as string,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    category: category as string,
+    subCategory: title as string,
+    sortBy: sortBy as string,
+    sortOrder: sortOrder as 'asc' | 'desc'
+  };
+
+  const pagination = {
+    page: Number(page),
+    limit: Number(limit),
+    total: 0,
+    totalPage: 0
+  };
+
   const services = await ServiceService.getAllServices(
-    { page: 1, totalPage: 0, limit: 10, total: 0 },
-    { lat, lng }
+    pagination,
+    { lat, lng },
+    filters
   );
 
   res.status(httpStatus.OK).json({
@@ -120,7 +174,6 @@ const getAllServices = catchAsync(async (req: Request, res: Response) => {
     data: services,
   });
 });
-
 const getAllServicesbarber = catchAsync(async (req: Request, res: Response) => {
   // Read query params (accept either ?searchTerm= or ?search=)
   const pageRaw = req.query.page as string | undefined;

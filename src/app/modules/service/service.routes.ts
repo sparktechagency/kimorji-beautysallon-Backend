@@ -10,7 +10,7 @@ import multer from 'multer';
 const router = express.Router();
 
 router.post('/', auth(USER_ROLES.BARBER), ServiceController.createService);
-router.get('/', auth(USER_ROLES.BARBER), ServiceController.getAllServicesbarber);
+router.get('/barber', auth(USER_ROLES.BARBER), ServiceController.getAllServicesbarber);
 router.get('/all', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER), ServiceController.getAllServices);
 router.patch('/:id', auth(USER_ROLES.BARBER), ServiceController.updateService);
 router.delete('/:id', auth(USER_ROLES.BARBER), ServiceController.deleteService);

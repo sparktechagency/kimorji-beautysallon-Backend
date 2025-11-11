@@ -120,15 +120,238 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
   }
 };
 
+// const getAllServices = async (
+//   pagination: { page: number; totalPage: number; limit: number; total: number },
+//   userCoordinates: { lat: number; lng: number }
+// ) => {
+//   const services = await Service.find()
+//     .populate('category')
+//     .populate('title')
+//     .populate('serviceType')
+//     .populate('barber', 'name email profile contact location');
+
+//   const now = new Date();
+//   const currentDay = getDayName(now);
+
+//   console.log('Current time:', now);
+//   console.log('Current day:', currentDay);
+
+//   const servicesWithDiscountAndDistance = await Promise.all(
+//     services.map(async (service) => {
+//       const serviceObj = service.toObject();
+
+//       // Calculate distance
+//       const barber = service.barber as any;
+//       let distance = null;
+//       if (barber?.location?.coordinates) {
+//         const [barberLng, barberLat] = barber.location.coordinates;
+//         distance = getDistanceFromLatLonInKm(
+//           userCoordinates.lat,
+//           userCoordinates.lng,
+//           barberLat,
+//           barberLng
+//         );
+//       }
+
+//       // Find all active offers for this service
+//       const activeOffers = await Offer.find({
+//         service: service._id,
+//         isActive: true,
+//         startTime: { $lte: now },
+//         endTime: { $gte: now }
+//       });
+
+//       console.log(`Service ${service._id} - Found ${activeOffers.length} active offers:`,
+//         activeOffers.map(o => ({
+//           id: o._id,
+//           days: o.days,
+//           timeSlots: o.timeSlots,
+//           percent: o.percent,
+//           isActive: o.isActive,
+//           startTime: o.startTime,
+//           endTime: o.endTime
+//         }))
+//       );
+
+//       // Build a map of day -> timeSlot -> discount
+//       const discountMap = new Map<string, Map<string, { percent: number; title: string }>>();
+
+//       activeOffers.forEach((offer) => {
+//         if (offer.days && Array.isArray(offer.days)) {
+//           offer.days.forEach((day: string) => {
+//             if (!discountMap.has(day)) {
+//               discountMap.set(day, new Map());
+//             }
+//             const dayMap = discountMap.get(day)!;
+
+//             if (offer.timeSlots && Array.isArray(offer.timeSlots) && offer.timeSlots.length > 0) {
+//               // Specific time slots
+//               offer.timeSlots.forEach((slot: string) => {
+//                 const existing = dayMap.get(slot);
+//                 if (!existing || existing.percent < offer.percent) {
+//                   dayMap.set(slot, {
+//                     percent: offer.percent,
+//                     title: offer.title || 'Special Offer'
+//                   });
+//                 }
+//               });
+//             } else {
+//               // All time slots for this day
+//               dayMap.set('ALL', {
+//                 percent: offer.percent,
+//                 title: offer.title || 'Special Offer'
+//               });
+//             }
+//           });
+//         }
+//       });
+
+//       console.log(`Service ${service._id} - Discount Map:`,
+//         Array.from(discountMap.entries()).map(([day, slots]) => ({
+//           day,
+//           slots: Array.from(slots.entries())
+//         }))
+//       );
+
+//       // Enhance dailySchedule with discount information
+//       const enhancedSchedule = serviceObj.dailySchedule?.map((schedule: any) => {
+//         const dayDiscounts = discountMap.get(schedule.day);
+//         const allDayDiscount = dayDiscounts?.get('ALL');
+
+//         const enhancedTimeSlots = schedule.timeSlot?.map((slot: string) => {
+//           let discount = 0;
+//           let offerTitle = '';
+
+//           // Check for specific time slot discount
+//           const slotDiscount = dayDiscounts?.get(slot);
+//           if (slotDiscount) {
+//             discount = slotDiscount.percent;
+//             offerTitle = slotDiscount.title;
+//           } else if (allDayDiscount) {
+//             // Use all-day discount if no specific slot discount
+//             discount = allDayDiscount.percent;
+//             offerTitle = allDayDiscount.title;
+//           }
+
+//           return {
+//             time: slot,
+//             Day: schedule.day,
+//             discount: discount,
+//             discountedPrice: discount > 0
+//               ? Math.round(serviceObj.price * (1 - discount / 100))
+//               : serviceObj.price,
+//             offerTitle: offerTitle
+//           };
+//         }) || [];
+
+//         return {
+//           day: schedule.day,
+//           timeSlots: enhancedTimeSlots
+//         };
+//       }) || [];
+
+//       // Calculate current discount (for the current day and time)
+//       let currentDiscount = 0;
+//       let currentOfferTitle = null;
+//       const currentDaySchedule = enhancedSchedule.find((s: any) => s.day === currentDay);
+
+//       if (currentDaySchedule) {
+//         const currentTime = now.toTimeString().slice(0, 5); // HH:MM
+//         const currentSlot = currentDaySchedule.timeSlots.find((ts: any) =>
+//           ts.time === currentTime || isTimeInSlot(currentTime, ts.time)
+//         );
+
+//         if (currentSlot && currentSlot.discount > 0) {
+//           currentDiscount = currentSlot.discount;
+//           currentOfferTitle = currentSlot.offerTitle;
+//         }
+//       }
+
+//       return {
+//         ...serviceObj,
+//         distance,
+//         dailySchedule: enhancedSchedule,
+//         discount: {
+//           hasDiscount: activeOffers.length > 0,
+//           currentDiscount: currentDiscount,
+//           currentOfferTitle: currentOfferTitle,
+//           maxDiscount: Math.max(...activeOffers.map(o => o.percent), 0)
+//         }
+//       };
+//     })
+//   );
+
+//   const { page, limit, total, totalPage } = pagination;
+//   return {
+//     services: servicesWithDiscountAndDistance,
+//     pagination: { page, limit, total, totalPage }
+//   };
+// };
+interface ServiceFilters {
+  searchTerm?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  category?: string;
+  title?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 const getAllServices = async (
   pagination: { page: number; totalPage: number; limit: number; total: number },
-  userCoordinates: { lat: number; lng: number }
+  userCoordinates: { lat: number; lng: number },
+  filters?: ServiceFilters
 ) => {
-  const services = await Service.find()
+  // Build query object
+  const query: any = {};
+
+  // Search filter (search in title, description, category name)
+  if (filters?.searchTerm) {
+    query.$or = [
+      { description: { $regex: filters.searchTerm, $options: 'i' } },
+      { 'title.name': { $regex: filters.searchTerm, $options: 'i' } }
+    ];
+  }
+
+  // Price filter
+  if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
+    query.price = {};
+    if (filters.minPrice !== undefined) {
+      query.price.$gte = filters.minPrice;
+    }
+    if (filters.maxPrice !== undefined) {
+      query.price.$lte = filters.maxPrice;
+    }
+  }
+
+  // Category filter
+  if (filters?.category) {
+    query.category = filters.category;
+  }
+
+  // Sub-category filter (assuming serviceType is sub-category)
+  if (filters?.title) {
+    query.serviceType = filters.title;
+  }
+
+  // Build sort object
+  const sortField = filters?.sortBy || 'createdAt';
+  const sortDirection = filters?.sortOrder === 'asc' ? 1 : -1;
+  const sort: any = { [sortField]: sortDirection };
+
+  // Count total documents matching the query
+  const total = await Service.countDocuments(query);
+  const totalPage = Math.ceil(total / pagination.limit);
+
+  // Fetch services with filters, pagination, and sorting
+  const services = await Service.find(query)
     .populate('category')
     .populate('title')
     .populate('serviceType')
-    .populate('barber', 'name email profile contact location');
+    .populate('barber', 'name email profile contact location')
+    .sort(sort)
+    .skip((pagination.page - 1) * pagination.limit)
+    .limit(pagination.limit);
 
   const now = new Date();
   const currentDay = getDayName(now);
@@ -281,13 +504,16 @@ const getAllServices = async (
     })
   );
 
-  const { page, limit, total, totalPage } = pagination;
   return {
     services: servicesWithDiscountAndDistance,
-    pagination: { page, limit, total, totalPage }
+    pagination: {
+      page: pagination.page,
+      limit: pagination.limit,
+      total,
+      totalPage
+    }
   };
 };
-
 const getDayName = (date: Date): string => {
   const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   return days[date.getDay()];

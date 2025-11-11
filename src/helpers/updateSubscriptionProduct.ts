@@ -37,10 +37,9 @@ export const updateSubscriptionProduct = async (
             await stripe.prices.update(productPrices.data[0].id, { active: false });
         }
 
-        // Create a new price for the updated product
         const newPrice = await stripe.prices.create({
             product: productId as string,
-            unit_amount: Number(payload.price) * 100, // Update price (in cents)
+            unit_amount: Number(payload.price) * 100,
             currency: 'usd',
             recurring: { interval: interval },
         });
