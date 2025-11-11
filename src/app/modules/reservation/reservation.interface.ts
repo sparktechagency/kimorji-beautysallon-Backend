@@ -1,3 +1,4 @@
+import { Day } from './../../../enums/day';
 import { Model, Types } from "mongoose"
 export type IReservation = {
   barber: Types.ObjectId;
@@ -5,6 +6,7 @@ export type IReservation = {
   service: Types.ObjectId;
   reservationDate: string; // "YYYY-MM-DD"
   timeSlot: string; // "HH:mm" - single time slot
+  Day: Day;
   status: "Upcoming" | "Accepted" | "Canceled" | "Completed";
   paymentStatus: "Pending" | "Paid" | "Refunded";
   price: number;

@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import { IReservation, ReservationModel } from "./reservation.interface";
 import { randomBytes } from "crypto";
+import { Day } from "../../../enums/day";
 
 // const ReservationSchema = new Schema<IReservation, ReservationModel>(
 //     {
@@ -107,6 +108,11 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
       type: String,
       required: true
     }, // "HH:mm"
+    Day: {
+      type: String,
+      enum: Day,
+      required: true
+    },
     status: {
       type: String,
       enum: ["Upcoming", "Accepted", "Canceled", "Completed"],

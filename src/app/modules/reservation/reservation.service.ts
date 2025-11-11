@@ -15,6 +15,7 @@ import { string } from "zod";
 import { IBookedSlot } from "../service/service.interface";
 import { logger } from "../../../shared/logger";
 import { enqueueNotification } from "../queue/notification.queue";
+import { Day } from "../../../enums/day";
 
 
 
@@ -83,6 +84,7 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
       bookedSlots: {
         date: payload.reservationDate,
         timeSlot: payload.timeSlot,
+        Day: payload.Day,
         reservationId: reservation._id
       }
     }

@@ -92,7 +92,7 @@ const addOfferToDB = async (
   });
 
   // Create new offer (don't update existing for now to avoid confusion)
-  const offer = await Offer.create({
+  const offer = await Offer.findOneAndUpdate({
     service: serviceId,
     title,
     percent,

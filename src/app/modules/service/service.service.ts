@@ -1,3 +1,4 @@
+import { Day } from './../../../enums/day';
 import httpStatus from 'http-status-codes';
 import { IService } from './service.interface';
 import { Service } from './service.model';
@@ -7,7 +8,6 @@ import { User } from '../user/user.model';
 import path from 'path';
 import { logger } from '../../../shared/logger';
 import { SubCategory } from '../subCategory/subCategory.model';
-import { Day } from '../../../enums/day';
 import { isValidDay, to24Hour } from '../../../helpers/find.offer';
 import { PaginatedResult, PaginationOptions } from '../../../helpers/pagination.interface';
 import Redis from 'ioredis';
@@ -251,7 +251,7 @@ const getAllServices = async (
 
         const enhancedTimeSlots = schedule.timeSlot?.map((slot: string) => {
           let discount = 0;
-          let offerTitle = null;
+          let offerTitle = '';
 
           // Check for specific time slot discount
           const slotDiscount = dayDiscounts?.get(slot);
@@ -266,6 +266,7 @@ const getAllServices = async (
 
           return {
             time: slot,
+            Day: schedule.day,
             discount: discount,
             discountedPrice: discount > 0
               ? Math.round(serviceObj.price * (1 - discount / 100))
@@ -326,6 +327,8 @@ const getDayName = (date: Date): string => {
 const isTimeInSlot = (currentTime: string, slotTime: string): boolean => {
   if (slotTime.includes('-')) {
     const [start, end] = slotTime.split('-');
+    const Day = getDayName(new Date());
+
     return currentTime >= start.trim() && currentTime <= end.trim();
   }
   return currentTime === slotTime;

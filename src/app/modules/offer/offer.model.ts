@@ -13,7 +13,7 @@ const offerSchema = new Schema<IOffer>(
       enum: Object.values(Day),
       required: true
     }],
-    timeSlots: [{ type: String }], // Add time slots
+    timeSlots: [{ type: String }],
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
     isActive: { type: Boolean, default: true }
@@ -21,7 +21,6 @@ const offerSchema = new Schema<IOffer>(
   { timestamps: true }
 );
 
-// Pre-save hook to validate and set isActive based on time
 offerSchema.pre("save", function (next) {
   const now = new Date();
 
