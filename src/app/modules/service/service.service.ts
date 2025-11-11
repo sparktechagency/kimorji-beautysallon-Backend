@@ -120,37 +120,6 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
   }
 };
 
-// const getAllServices = async (
-//   pagination: { page: number; totalPage: number; limit: number; total: number },
-//   userCoordinates: { lat: number; lng: number }
-// ) => {
-//   const services = await Service.find()
-//     .populate('category')
-//     .populate('title')
-//     .populate('serviceType')
-//     .populate('barber', 'name email profile contact location');
-
-//   const servicesWithDistance = services.map(service => {
-//     const barber = service.barber as any;
-
-//     if (barber?.location?.coordinates) {
-//       const [barberLng, barberLat] = barber.location.coordinates;
-//       const distance = getDistanceFromLatLonInKm(
-//         userCoordinates.lat,
-//         userCoordinates.lng,
-//         barberLat,
-//         barberLng
-//       );
-//       return { ...service.toObject(), distance };
-//     }
-
-//     return { ...service.toObject(), distance: null };
-//   });
-
-
-//   const { page, limit, total, totalPage } = pagination;
-//   return { services: servicesWithDistance, pagination: { page, limit, total, totalPage } };
-// };
 const getAllServices = async (
   pagination: { page: number; totalPage: number; limit: number; total: number },
   userCoordinates: { lat: number; lng: number }

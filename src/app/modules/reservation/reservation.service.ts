@@ -1,3 +1,4 @@
+import { TimeSlot } from './../../../helpers/timeslot.helper';
 import { JwtPayload } from "jsonwebtoken";
 import { IReservation } from "./reservation.interface";
 import { Reservation } from "./reservation.model";
@@ -17,32 +18,13 @@ import { logger } from "../../../shared/logger";
 import { enqueueNotification } from "../queue/notification.queue";
 import { Day } from "../../../enums/day";
 
-
-
-// const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
-//     const reservation = await Reservation.create(payload);
-//     if (!reservation) {
-//         throw new Error('Failed to created Reservation ');
-//     } else {
-//         const data = {
-//             text: "You receive a new reservation request",
-//             receiver: payload.barber,
-//             referenceId: reservation._id,
-//             screen: "RESERVATION"
-//         }
-
-//         sendNotifications(data);
-//     }
-
-//     return reservation;
-// };
 const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
   const service = await Service.findById(payload.service);
   if (!service) {
     throw new Error("Service not found");
   }
 
-  // Get the day of week from the reservation date
+  // Get the day of the week from the reservation date
   const dayOfWeek = new Date(payload.reservationDate).toLocaleDateString("en-US", { weekday: "long" });
   const dayOfWeekUpper = dayOfWeek.toUpperCase();
 
@@ -78,13 +60,13 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     throw new Error("Failed to create reservation");
   }
 
-  // Add the booked slot to the service
+  // Add the booked slot to the service, including the correct Day
   await Service.findByIdAndUpdate(payload.service, {
     $push: {
       bookedSlots: {
         date: payload.reservationDate,
         timeSlot: payload.timeSlot,
-        Day: payload.Day,
+        day: payload.Day,
         reservationId: reservation._id
       }
     }
@@ -99,7 +81,6 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
   };
   enqueueNotification;
   sendNotifications(data);
-
 
   return reservation;
 };

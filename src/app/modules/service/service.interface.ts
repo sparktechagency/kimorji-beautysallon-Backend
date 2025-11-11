@@ -1,3 +1,4 @@
+import { Day } from './../../../enums/day';
 import { Model, Types } from "mongoose";
 import { ServiceType } from "../../../enums/serviceType";
 import { IUser } from "../user/user.interface";
@@ -9,6 +10,7 @@ export type IScheduleItem = {
 export type IBookedSlot = {
   date: string; // "YYYY-MM-DD"
   timeSlot: string; // "HH:mm" - single time slot
+  Day: Day;
   reservationId: Types.ObjectId;
 };
 export type IService = {

@@ -111,7 +111,7 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
     Day: {
       type: String,
       enum: Day,
-      required: true
+      required: false
     },
     status: {
       type: String,

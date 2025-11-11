@@ -1,4 +1,3 @@
-
 import mongoose, { model, Schema } from "mongoose";
 import { IBookedSlot, IScheduleItem, IService, ServiceModel } from "./service.interface";
 import { ServiceType } from "../../../enums/serviceType";
@@ -20,6 +19,11 @@ const bookedSlotSchema = new Schema<IBookedSlot>(
   {
     date: { type: String, required: true },
     timeSlot: { type: String, required: true },
+    Day: {
+      type: String,
+      enum: Object.values(Day),
+      required: false
+    }
   },
   { _id: false }
 );
