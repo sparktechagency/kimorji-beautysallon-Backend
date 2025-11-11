@@ -537,7 +537,6 @@ const reservationSummerForBarberFromDB = async (user: JwtPayload): Promise<{}> =
   return data;
 }
 
-
 const reservationDetailsFromDB = async (id: string): Promise<{ reservation: IReservation | null, report: any }> => {
 
   if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid Reservation ID');

@@ -6,16 +6,15 @@ export const updateSubscriptionProduct = async (
     payload: Partial<IPackage>
 ): Promise<{ priceId?: string, productId: string } | null> => {
 
-    const {price, title, duration} = payload;
+    const { price, title, duration } = payload;
 
-    // Check if the product ID exists
-    if ( !productId && !productId?.startsWith("prod")) {
+    if (!productId && !productId?.startsWith("prod")) {
         throw new Error('Product ID is required for updating a product.');
     }
 
     // Update the product in Stripe
     const updatedProduct = await stripe.products.update(
-        productId as string, 
+        productId as string,
         {
             name: title as string
         }
