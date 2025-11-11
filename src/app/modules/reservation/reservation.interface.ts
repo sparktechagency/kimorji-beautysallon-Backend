@@ -4,8 +4,8 @@ export type IReservation = {
   barber: Types.ObjectId;
   customer: Types.ObjectId;
   service: Types.ObjectId;
-  reservationDate: string; // "YYYY-MM-DD"
-  timeSlot: string; // "HH:mm" - single time slot
+  reservationDate: string;
+  timeSlot: string;
   Day: Day;
   status: "Upcoming" | "Accepted" | "Canceled" | "Completed";
   paymentStatus: "Pending" | "Paid" | "Refunded";

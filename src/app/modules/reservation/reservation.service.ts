@@ -5,7 +5,7 @@ import { Reservation } from "./reservation.model";
 import { StatusCodes } from "http-status-codes";
 import ApiError from "../../../errors/ApiError";
 import { Report } from "../report/report.model";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { sendNotifications } from "../../../helpers/notificationsHelper";
 import getDistanceFromCoordinates from "../../../shared/getDistanceFromCoordinates";
 import getRatingForBarber from "../../../shared/getRatingForBarber";
@@ -17,6 +17,7 @@ import { IBookedSlot } from "../service/service.interface";
 import { logger } from "../../../shared/logger";
 import { enqueueNotification } from "../queue/notification.queue";
 import { Day } from "../../../enums/day";
+import { resetSlotAndUpdateStatus } from '../../../helpers/reset.time.slot';
 
 const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
   const service = await Service.findById(payload.service);
@@ -24,11 +25,9 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     throw new Error("Service not found");
   }
 
-  // Get the day of the week from the reservation date
   const dayOfWeek = new Date(payload.reservationDate).toLocaleDateString("en-US", { weekday: "long" });
   const dayOfWeekUpper = dayOfWeek.toUpperCase();
 
-  // Find the daily schedule for this day
   const dailySchedule = service.dailySchedule.find(
     (schedule) => schedule.day === dayOfWeekUpper || schedule.day === dayOfWeek
   );
@@ -37,13 +36,11 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     throw new Error(`No schedule available for ${dayOfWeek}`);
   }
 
-  // Check if the requested timeSlot exists in the daily schedule
   const isValidTimeSlot = dailySchedule.timeSlot.includes(payload.timeSlot);
   if (!isValidTimeSlot) {
     throw new Error(`Time slot ${payload.timeSlot} is not available on ${dayOfWeek}`);
   }
 
-  // Check if the slot is already booked
   const isSlotBooked = service.bookedSlots.some(
     (slot) =>
       slot.date === payload.reservationDate &&
@@ -54,14 +51,12 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     throw new Error("This time slot is already booked for the selected date");
   }
 
-  // Create the reservation
   const reservation = await Reservation.create(payload);
   if (!reservation) {
     throw new Error("Failed to create reservation");
   }
 
-  // Add the booked slot to the service, including the correct Day
-  await Service.findByIdAndUpdate(payload.service, {
+  await Service.findByIdAndUpdate(payload.service as Types.ObjectId, {
     $push: {
       bookedSlots: {
         date: payload.reservationDate,
@@ -72,7 +67,6 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     }
   });
 
-  // Send notification
   const data = {
     text: "You receive a new reservation request",
     receiver: payload.barber,
@@ -81,6 +75,24 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
   };
   enqueueNotification;
   sendNotifications(data);
+
+
+  // setTimeout(async () => {
+  //   const updatedReservation = await Reservation.findById(reservation._id.toString());
+
+  //   if (updatedReservation && updatedReservation.status === "Canceled") {
+  //     // Reset the time slot
+  //     await resetSlotAndUpdateStatus(payload.service as unknown as mongoose.Schema.Types.ObjectId, payload.reservationDate, payload.timeSlot);
+
+  //     // Update the reservation status
+  //     await Reservation.findByIdAndUpdate(reservation._id, {
+  //       status: "Completed",
+  //     });
+
+  //     console.log(`Reservation ${reservation._id} has been canceled and slot reset.`);
+  //   }
+
+  // }, 1 * 60 * 1000); // 1 minute in milliseconds
 
   return reservation;
 };
