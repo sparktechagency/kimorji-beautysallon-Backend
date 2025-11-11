@@ -302,10 +302,8 @@ const getAllServices = async (
   userCoordinates: { lat: number; lng: number },
   filters?: ServiceFilters
 ) => {
-  // Build query object
   const query: any = {};
 
-  // Search filter (search in title, description, category name)
   if (filters?.searchTerm) {
     query.$or = [
       { description: { $regex: filters.searchTerm, $options: 'i' } },
@@ -313,7 +311,6 @@ const getAllServices = async (
     ];
   }
 
-  // Price filter
   if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
     query.price = {};
     if (filters.minPrice !== undefined) {
@@ -324,26 +321,21 @@ const getAllServices = async (
     }
   }
 
-  // Category filter
   if (filters?.category) {
     query.category = filters.category;
   }
 
-  // Sub-category filter (assuming serviceType is sub-category)
   if (filters?.title) {
     query.serviceType = filters.title;
   }
 
-  // Build sort object
   const sortField = filters?.sortBy || 'createdAt';
   const sortDirection = filters?.sortOrder === 'asc' ? 1 : -1;
   const sort: any = { [sortField]: sortDirection };
 
-  // Count total documents matching the query
   const total = await Service.countDocuments(query);
   const totalPage = Math.ceil(total / pagination.limit);
 
-  // Fetch services with filters, pagination, and sorting
   const services = await Service.find(query)
     .populate('category')
     .populate('title')
@@ -376,7 +368,6 @@ const getAllServices = async (
         );
       }
 
-      // Find all active offers for this service
       const activeOffers = await Offer.find({
         service: service._id,
         isActive: true,
@@ -396,7 +387,6 @@ const getAllServices = async (
         }))
       );
 
-      // Build a map of day -> timeSlot -> discount
       const discountMap = new Map<string, Map<string, { percent: number; title: string }>>();
 
       activeOffers.forEach((offer) => {
@@ -408,7 +398,6 @@ const getAllServices = async (
             const dayMap = discountMap.get(day)!;
 
             if (offer.timeSlots && Array.isArray(offer.timeSlots) && offer.timeSlots.length > 0) {
-              // Specific time slots
               offer.timeSlots.forEach((slot: string) => {
                 const existing = dayMap.get(slot);
                 if (!existing || existing.percent < offer.percent) {
@@ -419,7 +408,6 @@ const getAllServices = async (
                 }
               });
             } else {
-              // All time slots for this day
               dayMap.set('ALL', {
                 percent: offer.percent,
                 title: offer.title || 'Special Offer'
@@ -436,7 +424,6 @@ const getAllServices = async (
         }))
       );
 
-      // Enhance dailySchedule with discount information
       const enhancedSchedule = serviceObj.dailySchedule?.map((schedule: any) => {
         const dayDiscounts = discountMap.get(schedule.day);
         const allDayDiscount = dayDiscounts?.get('ALL');
@@ -445,13 +432,11 @@ const getAllServices = async (
           let discount = 0;
           let offerTitle = '';
 
-          // Check for specific time slot discount
           const slotDiscount = dayDiscounts?.get(slot);
           if (slotDiscount) {
             discount = slotDiscount.percent;
             offerTitle = slotDiscount.title;
           } else if (allDayDiscount) {
-            // Use all-day discount if no specific slot discount
             discount = allDayDiscount.percent;
             offerTitle = allDayDiscount.title;
           }
@@ -473,13 +458,12 @@ const getAllServices = async (
         };
       }) || [];
 
-      // Calculate current discount (for the current day and time)
       let currentDiscount = 0;
       let currentOfferTitle = null;
       const currentDaySchedule = enhancedSchedule.find((s: any) => s.day === currentDay);
 
       if (currentDaySchedule) {
-        const currentTime = now.toTimeString().slice(0, 5); // HH:MM
+        const currentTime = now.toTimeString().slice(0, 5);
         const currentSlot = currentDaySchedule.timeSlots.find((ts: any) =>
           ts.time === currentTime || isTimeInSlot(currentTime, ts.time)
         );
