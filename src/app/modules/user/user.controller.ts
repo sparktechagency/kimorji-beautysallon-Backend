@@ -47,12 +47,10 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 const updateProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
 
-    // Initialize variables for the file fields
     let profile, tradeLicences: string[] = [], proofOwnerId: string[] = [], sallonPhoto: string[] = [];
 
-    // Process image field (profile picture)
-    if (req.files && 'image' in req.files && req.files.image.length > 0) {
-        profile = req.files.image.map((file: Express.Multer.File) => `/images/${file.filename}`);
+    if (req.files && 'image' in req.files && req.files.image[0]) {
+        profile = `/images/${req.files.image[0].filename}`;
     }
 
     // Process tradeLicences field (multiple files)

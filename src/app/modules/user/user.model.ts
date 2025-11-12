@@ -60,8 +60,8 @@ const userSchema = new Schema<IUser, UserModal>(
     },
 
     profile: {
-      type: [String],
-      default: ['https://res.cloudinary.com/ddqovbzxy/image/upload/v1736572642/avatar_ziy9mp.jpg'],
+      type: String,
+      default: 'https://res.cloudinary.com/ddqovbzxy/image/upload/v1736572642/avatar_ziy9mp.jpg',
     },
     tradeLicences: {
       type: [String],
