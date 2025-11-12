@@ -37,8 +37,8 @@ const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Pr
             },
         ],
         customer_email: user?.email,
-        success_url: "https://www.admin.barbermeus.com/public/payment-success",
-        cancel_url: "https://www.admin.barbermeus.com/public/payment-failed"
+        success_url: "http://10.10.7.45:6008/api/v1/success",
+        cancel_url: "http://10.10.7.45:6008/api/v1/cancelled"
     });
 
     if (!session) {

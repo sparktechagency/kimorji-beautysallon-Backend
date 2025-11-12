@@ -34,6 +34,14 @@ app.get("/", (req: Request, res: Response) => {
     res.send("Hey Welcome to the beauty World. How can I assist you");
 })
 
+app.get("/success", (req: Request, res: Response) => {
+    res.send("congratulations payment success");
+})
+
+app.get("/cancelled", (req: Request, res: Response) => {
+    res.send("Very Sad Cancelled Payment");
+})
+
 //global error handle
 app.use(globalErrorHandler);
 
