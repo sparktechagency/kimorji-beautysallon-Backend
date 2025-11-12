@@ -49,26 +49,22 @@ const updateProfile = catchAsync(async (req: Request, res: Response, next: NextF
 
     let profile, tradeLicences: string[] = [], proofOwnerId: string[] = [], sallonPhoto: string[] = [];
 
-    if (req.files && 'image' in req.files && req.files.image[0]) {
+    if (req.files && 'image' in req.files && req.files.image[0]) { //not an array
         profile = `/images/${req.files.image[0].filename}`;
     }
 
-    // Process tradeLicences field (multiple files)
     if (req.files && 'tradeLicences' in req.files && req.files.tradeLicences.length > 0) {
         tradeLicences = req.files.tradeLicences.map((file: Express.Multer.File) => `/tradeLicences/${file.filename}`);
     }
 
-    // Process proofOwnerId field (multiple files)
     if (req.files && 'proofOwnerId' in req.files && req.files.proofOwnerId.length > 0) {
         proofOwnerId = req.files.proofOwnerId.map((file: Express.Multer.File) => `/proofOwnerIds/${file.filename}`);
     }
 
-    // Process sallonPhoto field (multiple files)
     if (req.files && 'sallonPhoto' in req.files && req.files.sallonPhoto.length > 0) {
         sallonPhoto = req.files.sallonPhoto.map((file: Express.Multer.File) => `/sallonPhotos/${file.filename}`);
     }
 
-    // Prepare the data object for the update
     const data = {
         profile,
         tradeLicences,
@@ -77,10 +73,8 @@ const updateProfile = catchAsync(async (req: Request, res: Response, next: NextF
         ...req.body,
     };
 
-    // Call the service to update the user's profile
     const result = await UserService.updateProfileToDB(user, data);
 
-    // Send the response back to the client
     sendResponse(res, {
         success: true,
         statusCode: StatusCodes.OK,

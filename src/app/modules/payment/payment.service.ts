@@ -202,19 +202,16 @@ const transferAndPayoutToBarber = async (id: string) => {
 
 
 const refundPayment = async (reservationId: string) => {
-    // Find the reservation (you'll need to have the paymentIntent ID in the reservation document)
     const reservation = await Reservation.findById(reservationId);
 
     if (!reservation) {
         throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation doesn't exist");
     }
 
-    // Ensure payment is already completed
     if (reservation.paymentStatus !== 'Paid') {
         throw new ApiError(StatusCodes.BAD_REQUEST, "Payment hasn't been completed yet");
     }
 
-    // Get the paymentIntent ID (this should be stored in the reservation when the payment is made)
     const paymentIntentId = reservation.paymentIntentId;
 
     if (!paymentIntentId) {
@@ -222,7 +219,6 @@ const refundPayment = async (reservationId: string) => {
     }
 
     try {
-        // Create a refund for the payment
         const refund = await stripe.refunds.create({
             payment_intent: paymentIntentId
         });
@@ -231,13 +227,11 @@ const refundPayment = async (reservationId: string) => {
             throw new ApiError(StatusCodes.BAD_REQUEST, 'Refund failed');
         }
 
-        // Update the reservation to reflect the refunded status
         await Reservation.findByIdAndUpdate(reservationId, {
             paymentStatus: 'Refunded',
-            status: 'Canceled' // or another appropriate status based on your business logic
+            status: 'Canceled'
         });
 
-        // Notify the customer (optional)
         const data = {
             text: 'Your payment has been refunded.',
             receiver: reservation.customer,
