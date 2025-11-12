@@ -16,6 +16,7 @@ export type IReservation = {
   isReported: boolean;
   sessionId?: string;
   transfer: boolean;
+  paymentIntentId?: string;
 };
 
 export type ReservationModel = Model<IReservation, Record<string, unknown>>;

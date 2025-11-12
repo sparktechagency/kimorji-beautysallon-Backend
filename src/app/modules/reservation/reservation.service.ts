@@ -19,6 +19,83 @@ import { enqueueNotification } from "../queue/notification.queue";
 import { Day } from "../../../enums/day";
 import { resetSlotAndUpdateStatus } from '../../../helpers/reset.time.slot';
 
+// const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
+//   const service = await Service.findById(payload.service);
+//   if (!service) {
+//     throw new Error("Service not found");
+//   }
+
+//   const dayOfWeek = new Date(payload.reservationDate).toLocaleDateString("en-US", { weekday: "long" });
+//   const dayOfWeekUpper = dayOfWeek.toUpperCase();
+
+//   const dailySchedule = service.dailySchedule.find(
+//     (schedule) => schedule.day === dayOfWeekUpper || schedule.day === dayOfWeek
+//   );
+
+//   if (!dailySchedule) {
+//     throw new Error(`No schedule available for ${dayOfWeek}`);
+//   }
+
+//   const isValidTimeSlot = dailySchedule.timeSlot.includes(payload.timeSlot);
+//   if (!isValidTimeSlot) {
+//     throw new Error(`Time slot ${payload.timeSlot} is not available on ${dayOfWeek}`);
+//   }
+
+//   const isSlotBooked = service.bookedSlots.some(
+//     (slot) =>
+//       slot.date === payload.reservationDate &&
+//       slot.timeSlot === payload.timeSlot
+//   );
+
+//   if (isSlotBooked) {
+//     throw new Error("This time slot is already booked for the selected date");
+//   }
+
+//   const reservation = await Reservation.create(payload);
+//   if (!reservation) {
+//     throw new Error("Failed to create reservation");
+//   }
+
+//   await Service.findByIdAndUpdate(payload.service as Types.ObjectId, {
+//     $push: {
+//       bookedSlots: {
+//         date: payload.reservationDate,
+//         timeSlot: payload.timeSlot,
+//         day: payload.Day,
+//         reservationId: reservation._id
+//       }
+//     }
+//   });
+
+//   const data = {
+//     text: "You receive a new reservation request",
+//     receiver: payload.barber,
+//     referenceId: reservation._id,
+//     screen: "RESERVATION"
+//   };
+//   enqueueNotification;
+//   sendNotifications(data);
+
+
+//   // setTimeout(async () => {
+//   //   const updatedReservation = await Reservation.findById(reservation._id.toString());
+
+//   //   if (updatedReservation && updatedReservation.status === "Canceled") {
+//   //     // Reset the time slot
+//   //     await resetSlotAndUpdateStatus(payload.service as unknown as mongoose.Schema.Types.ObjectId, payload.reservationDate, payload.timeSlot);
+
+//   //     // Update the reservation status
+//   //     await Reservation.findByIdAndUpdate(reservation._id, {
+//   //       status: "Completed",
+//   //     });
+
+//   //     console.log(`Reservation ${reservation._id} has been canceled and slot reset.`);
+//   //   }
+
+//   // }, 1 * 60 * 1000); // 1 minute in milliseconds
+
+//   return reservation;
+// };
 const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
   const service = await Service.findById(payload.service);
   if (!service) {
@@ -51,11 +128,13 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     throw new Error("This time slot is already booked for the selected date");
   }
 
+  // Create reservation
   const reservation = await Reservation.create(payload);
   if (!reservation) {
     throw new Error("Failed to create reservation");
   }
 
+  // Update the bookedSlots array for the service
   await Service.findByIdAndUpdate(payload.service as Types.ObjectId, {
     $push: {
       bookedSlots: {
@@ -67,6 +146,7 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
     }
   });
 
+  // Send notification to the barber
   const data = {
     text: "You receive a new reservation request",
     receiver: payload.barber,
@@ -76,26 +156,9 @@ const createReservationToDB = async (payload: IReservation): Promise<IReservatio
   enqueueNotification;
   sendNotifications(data);
 
-
-  // setTimeout(async () => {
-  //   const updatedReservation = await Reservation.findById(reservation._id.toString());
-
-  //   if (updatedReservation && updatedReservation.status === "Canceled") {
-  //     // Reset the time slot
-  //     await resetSlotAndUpdateStatus(payload.service as unknown as mongoose.Schema.Types.ObjectId, payload.reservationDate, payload.timeSlot);
-
-  //     // Update the reservation status
-  //     await Reservation.findByIdAndUpdate(reservation._id, {
-  //       status: "Completed",
-  //     });
-
-  //     console.log(`Reservation ${reservation._id} has been canceled and slot reset.`);
-  //   }
-
-  // }, 1 * 60 * 1000); // 1 minute in milliseconds
-
   return reservation;
 };
+
 
 // const updateReservationStatus = async (
 //   reservationId: string,
@@ -370,7 +433,7 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
         ]
       }
     ])
-    .select("customer service createdAt status tips travelFee appCharge paymentStatus cancelByCustomer price")
+    .select("customer service createdAt status tips travelFee appCharge paymentStatus cancelByCustomer price txid sessionId transfer paymentIntentId ")
     .skip(skip)
     .limit(size)
     .lean();
@@ -455,7 +518,7 @@ const customerReservationFromDB = async (user: JwtPayload, query: Record<string,
         ]
       }
     ])
-    .select("barber service createdAt status travelFee appCharge tips price paymentStatus cancelByCustomer")
+    .select("barber service createdAt status travelFee appCharge tips price paymentStatus cancelByCustomer txid sessionId transfer paymentIntentId ")
     .skip(skip)
     .limit(size)
     .lean();

@@ -9,6 +9,53 @@ import { IReservation } from "../reservation/reservation.interface";
 import mongoose from "mongoose";
 import { sendNotifications } from "../../../helpers/notificationsHelper";
 
+// const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Promise<string | null> => {
+//     const { price, service_name, id, tips } = payload;
+
+//     if (!service_name) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Service name is required");
+//     }
+
+//     if (!id) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation ID is required");
+//     }
+
+//     // Create a checkout session
+//     const session = await stripe.checkout.sessions.create({
+//         payment_method_types: ["card"],
+//         mode: "payment",
+//         line_items: [
+//             {
+//                 price_data: {
+//                     currency: "AED",
+//                     product_data: {
+//                         name: `${service_name} Service Reservation Payment`,
+//                     },
+//                     unit_amount: price ? Math.trunc(price * 100) : Math.trunc(tips * 100),
+//                 },
+//                 quantity: 1,
+//             },
+//         ],
+//         customer_email: user?.email,
+//         success_url: "http://10.10.7.45:6008/api/v1/success",
+//         cancel_url: "http://10.10.7.45:6008/api/v1/cancelled"
+//     });
+
+//     if (!session) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to create Payment Checkout");
+//     } else {
+//         await Reservation.findOneAndUpdate(
+//             { _id: id },
+//             {
+//                 sessionId: session.id,
+//                 tips: tips ? Number(tips) : 0
+//             },
+//             { new: true }
+//         );
+//     }
+
+//     return session?.url;
+// };
 const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Promise<string | null> => {
     const { price, service_name, id, tips } = payload;
 
@@ -19,8 +66,8 @@ const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Pr
     if (!id) {
         throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation ID is required");
     }
-
-    // Create a checkout session
+    const totalPrice = Math.trunc((price + (tips || 0)) * 100)
+    // Create a Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
@@ -31,30 +78,32 @@ const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Pr
                     product_data: {
                         name: `${service_name} Service Reservation Payment`,
                     },
-                    unit_amount: price ? Math.trunc(price * 100) : Math.trunc(tips * 100),
+                    // unit_amount: price ? Math.trunc(price * 100) : Math.trunc(tips * 100),
+                    unit_amount: totalPrice,
                 },
                 quantity: 1,
             },
         ],
         customer_email: user?.email,
-        success_url: "http://10.10.7.45:6008/api/v1/success",
-        cancel_url: "http://10.10.7.45:6008/api/v1/cancelled"
+        success_url: "http://10.10.7.45:6008/success",
+        cancel_url: "http://10.10.7.45:6008/cancelled"
     });
 
     if (!session) {
         throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to create Payment Checkout");
-    } else {
-        await Reservation.findOneAndUpdate(
-            { _id: id },
-            {
-                sessionId: session.id,
-                tips: tips ? Number(tips) : 0
-            },
-            { new: true }
-        );
     }
 
-    return session?.url;
+    // Update the reservation with the session ID
+    await Reservation.findOneAndUpdate(
+        { _id: id },
+        {
+            sessionId: session.id,
+            tips: tips ? Number(tips) : 0
+        },
+        { new: true }
+    );
+
+    return session.url;
 };
 
 // create account
@@ -198,8 +247,62 @@ const transferAndPayoutToBarber = async (id: string) => {
     }
 }
 
+
+const refundPayment = async (reservationId: string) => {
+    // Find the reservation (you'll need to have the paymentIntent ID in the reservation document)
+    const reservation = await Reservation.findById(reservationId);
+
+    if (!reservation) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation doesn't exist");
+    }
+
+    // Ensure payment is already completed
+    if (reservation.paymentStatus !== 'Paid') {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Payment hasn't been completed yet");
+    }
+
+    // Get the paymentIntent ID (this should be stored in the reservation when the payment is made)
+    const paymentIntentId = reservation.paymentIntentId;
+
+    if (!paymentIntentId) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "No paymentIntent found for this reservation");
+    }
+
+    try {
+        // Create a refund for the payment
+        const refund = await stripe.refunds.create({
+            payment_intent: paymentIntentId
+        });
+
+        if (refund.status !== 'succeeded') {
+            throw new ApiError(StatusCodes.BAD_REQUEST, 'Refund failed');
+        }
+
+        // Update the reservation to reflect the refunded status
+        await Reservation.findByIdAndUpdate(reservationId, {
+            paymentStatus: 'Refunded',
+            status: 'Canceled' // or another appropriate status based on your business logic
+        });
+
+        // Notify the customer (optional)
+        const data = {
+            text: 'Your payment has been refunded.',
+            receiver: reservation.customer,
+            referenceId: reservationId,
+            screen: 'RESERVATION'
+        };
+        sendNotifications(data);
+
+        console.log(`Refunded payment for reservation ${reservationId}`);
+    } catch (error) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, (error as Error).message);
+    }
+};
+
 export const PaymentService = {
     createPaymentCheckoutToStripe,
     createAccountToStripe,
-    transferAndPayoutToBarber
+    transferAndPayoutToBarber,
+    refundPayment
+
 }

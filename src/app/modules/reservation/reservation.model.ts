@@ -72,6 +72,10 @@ const ReservationSchema = new Schema<IReservation, ReservationModel>(
     transfer: {
       type: Boolean,
       default: false
+    },
+    paymentIntentId: {
+      type: String,
+      required: false
     }
   },
   { timestamps: true }

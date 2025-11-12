@@ -5,7 +5,7 @@ import sendResponse from "../../../shared/sendResponse";
 import { StatusCodes } from "http-status-codes";
 
 
-const createPaymentCheckoutToStripe = catchAsync(async(req: Request, res: Response)=>{
+const createPaymentCheckoutToStripe = catchAsync(async (req: Request, res: Response) => {
     const payload = req.body;
     const result = await PaymentService.createPaymentCheckoutToStripe(req.user, payload);
     sendResponse(res, {
@@ -16,7 +16,7 @@ const createPaymentCheckoutToStripe = catchAsync(async(req: Request, res: Respon
     })
 });
 
-const createAccountToStripe = catchAsync(async(req: Request, res: Response)=>{
+const createAccountToStripe = catchAsync(async (req: Request, res: Response) => {
     const result = await PaymentService.createAccountToStripe(req.user);
     sendResponse(res, {
         statusCode: StatusCodes.OK,
@@ -26,7 +26,7 @@ const createAccountToStripe = catchAsync(async(req: Request, res: Response)=>{
     })
 });
 
-const transferAndPayout = catchAsync(async(req: Request, res: Response)=>{
+const transferAndPayout = catchAsync(async (req: Request, res: Response) => {
 
     const result = await PaymentService.transferAndPayoutToBarber(req.params.id);
     sendResponse(res, {
@@ -37,9 +37,21 @@ const transferAndPayout = catchAsync(async(req: Request, res: Response)=>{
     })
 });
 
+//refund
+const refundPay = catchAsync(async (req: Request, res: Response) => {
+    const result = await PaymentService.refundPayment(req.params.id);
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Refund Successfully",
+        data: result
+    })
+});
+
 
 export const PaymentController = {
     createPaymentCheckoutToStripe,
     createAccountToStripe,
-    transferAndPayout
+    transferAndPayout,
+    refundPay
 }

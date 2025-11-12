@@ -17,7 +17,9 @@ router.post("/create-payment-checkout",
     },
     PaymentController.createPaymentCheckoutToStripe
 );
+
+router.post("/refund/:id", auth(USER_ROLES.BARBER, USER_ROLES.ADMIN), PaymentController.refundPay);
 router.get("/create-connected-account", auth(USER_ROLES.BARBER), PaymentController.createAccountToStripe);
-router.patch("/transfer-payouts/:id", auth(USER_ROLES.CUSTOMER), PaymentController.transferAndPayout);
+router.patch("/transfer-payouts/:id", auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER), PaymentController.transferAndPayout);
 
 export const PaymentRoutes = router;
