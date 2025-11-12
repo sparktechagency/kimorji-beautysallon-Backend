@@ -31,10 +31,10 @@ export type IUser = {
     dateOfBirth: string;
     gender: "Male" | "Female" | "Children" | "Others";
     isDeleted: boolean;
-    profile: string;
-    tradeLicences?: string;
-    proofOwnerId?: string;
-    sallonPhoto?: string;
+    profile: string[];
+    tradeLicences?: string[];
+    proofOwnerId?: string[];
+    sallonPhoto?: string[];
     isUpdate: boolean;
     verified: boolean;
     discount?: number;

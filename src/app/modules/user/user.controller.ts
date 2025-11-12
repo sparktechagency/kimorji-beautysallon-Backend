@@ -42,28 +42,35 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-//update profile
+
+
 const updateProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
-       
-       
-        
-    let profile,tradeLicences, proofOwnerId, sallonPhoto;
-    if (req.files && 'image' in req.files && req.files.image[0]) {
-        profile = `/images/${req.files.image[0].filename}`;
-    }
-    
-    if (req.files && 'tradeLicences' in req.files && req.files.tradeLicences[0]) {
-    tradeLicences = `/tradeLicences/${req.files.tradeLicences[0].filename}`;
+
+    // Initialize variables for the file fields
+    let profile, tradeLicences: string[] = [], proofOwnerId: string[] = [], sallonPhoto: string[] = [];
+
+    // Process image field (profile picture)
+    if (req.files && 'image' in req.files && req.files.image.length > 0) {
+        profile = req.files.image.map((file: Express.Multer.File) => `/images/${file.filename}`);
     }
 
-    if (req.files && 'proofOwnerId' in req.files && req.files.proofOwnerId[0]) {
-        proofOwnerId = `/proofOwnerIds/${req.files.proofOwnerId[0].filename}`
+    // Process tradeLicences field (multiple files)
+    if (req.files && 'tradeLicences' in req.files && req.files.tradeLicences.length > 0) {
+        tradeLicences = req.files.tradeLicences.map((file: Express.Multer.File) => `/tradeLicences/${file.filename}`);
     }
-    if (req.files && 'sallonPhoto' in req.files && req.files.sallonPhoto[0]) {
-        sallonPhoto = `/sallonPhotos/${req.files.sallonPhoto[0].filename}`
-     }
 
+    // Process proofOwnerId field (multiple files)
+    if (req.files && 'proofOwnerId' in req.files && req.files.proofOwnerId.length > 0) {
+        proofOwnerId = req.files.proofOwnerId.map((file: Express.Multer.File) => `/proofOwnerIds/${file.filename}`);
+    }
+
+    // Process sallonPhoto field (multiple files)
+    if (req.files && 'sallonPhoto' in req.files && req.files.sallonPhoto.length > 0) {
+        sallonPhoto = req.files.sallonPhoto.map((file: Express.Multer.File) => `/sallonPhotos/${file.filename}`);
+    }
+
+    // Prepare the data object for the update
     const data = {
         profile,
         tradeLicences,
@@ -71,15 +78,19 @@ const updateProfile = catchAsync(async (req: Request, res: Response, next: NextF
         sallonPhoto,
         ...req.body,
     };
+
+    // Call the service to update the user's profile
     const result = await UserService.updateProfileToDB(user, data);
 
+    // Send the response back to the client
     sendResponse(res, {
         success: true,
         statusCode: StatusCodes.OK,
         message: 'Profile updated successfully',
-        data: result
+        data: result,
     });
 });
+
 
 //update profile
 const updateLocation = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

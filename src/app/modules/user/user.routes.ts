@@ -16,8 +16,8 @@ router.get(
 router.patch('/update-location',
     auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
     UserController.updateLocation
-  );
-  
+);
+
 router.post(
     '/create-admin',
     validateRequest(UserValidation.createAdminZodSchema),

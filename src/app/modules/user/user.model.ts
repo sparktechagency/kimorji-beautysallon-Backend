@@ -60,23 +60,23 @@ const userSchema = new Schema<IUser, UserModal>(
     },
 
     profile: {
-      type: String,
-      default: 'https://res.cloudinary.com/ddqovbzxy/image/upload/v1736572642/avatar_ziy9mp.jpg',
+      type: [String],
+      default: ['https://res.cloudinary.com/ddqovbzxy/image/upload/v1736572642/avatar_ziy9mp.jpg'],
     },
     tradeLicences: {
-      type: String,
+      type: [String],
       required: false,
-      default: ""
+      default: []
     },
     proofOwnerId: {
-      type: String,
+      type: [String],
       required: false,
-      default: ""
+      default: []
     },
     sallonPhoto: {
-      type: String,
+      type: [String],
       required: false,
-      default: ""
+      default: []
 
     },
     isUpdate: {
@@ -231,9 +231,15 @@ userSchema.pre('save', async function (next) {
   }
 
   // Apply isUpdate logic to all users (not just BARBER)
-  const hasTradelicences = user.tradeLicences && user.tradeLicences.trim() !== '';
-  const hasProofOwnerId = user.proofOwnerId && user.proofOwnerId.trim() !== '';
-  const hasSallonPhoto = user.sallonPhoto && user.sallonPhoto.trim() !== '';
+  const hasTradelicences = Array.isArray(user.tradeLicences)
+    ? user.tradeLicences.length > 0
+    : Boolean(user.tradeLicences && String(user.tradeLicences).trim() !== '');
+  const hasProofOwnerId = Array.isArray(user.proofOwnerId)
+    ? user.proofOwnerId.length > 0
+    : Boolean(user.proofOwnerId && String(user.proofOwnerId).trim() !== '');
+  const hasSallonPhoto = Array.isArray(user.sallonPhoto)
+    ? user.sallonPhoto.length > 0
+    : Boolean(user.sallonPhoto && String(user.sallonPhoto).trim() !== '');
 
   // Only set isUpdate to true when ALL three fields have values
   user.isUpdate = !!(hasTradelicences && hasProofOwnerId && hasSallonPhoto);

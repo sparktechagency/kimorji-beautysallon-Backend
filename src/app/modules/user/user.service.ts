@@ -104,36 +104,55 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
   return data;
 };
 
-// const updateProfileToDB = async (user: JwtPayload, payload: Partial<IUser>): Promise<Partial<IUser | null>> => {
-//     const { id } = user;
-//     const isExistUser = await User.isExistUserById(id);
-//     if (!isExistUser) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
-//     }
 
-//     //unlink file here
-//     if (payload.profile) {
-//         unlinkFile(isExistUser.profile);
-//     }
-//     if (payload.tradeLicences) {
-//         unlinkFile(isExistUser.tradeLicences);
-//     }
+// const updateProfileToDB = async (
+//   user: JwtPayload,
+//   payload: Partial<IUser>
+// ): Promise<Partial<IUser | null>> => {
+//   const { id } = user;
 
-//     const updateDoc = await User.findOneAndUpdate(
-//         { _id: id },
-//         payload,
-//         { new: true }
-//     );
-//     return updateDoc;
+//   // Check if user exists
+//   const existingUser = await User.isExistUserById(id);
+//   if (!existingUser) {
+//     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+//   }
+
+//   // Handle file cleanup for updated files
+//   const fileFields = ['profile', 'tradeLicences[]', 'sallonPhoto[]', 'proofOwnerId[]'];
+
+//   for (const field of fileFields) {
+//     if (payload[field as keyof IUser] && existingUser[field as keyof IUser]) {
+//       // Unlink old file if new file is being uploaded
+//       try {
+//         unlinkFile(existingUser[field as keyof IUser] as string);
+//       } catch (error) {
+//         console.error(`Failed to unlink old ${field}:`, error);
+//         // Don't throw error, just log it as file might not exist
+//       }
+//     }
+//   }
+
+//   const userToUpdate = await User.findById(id);
+//   if (!userToUpdate) {
+//     throw new ApiError(StatusCodes.BAD_REQUEST, "User not found for update!");
+//   }
+
+//   Object.assign(userToUpdate, payload);
+
+//   const updatedUser = await userToUpdate.save();
+
+//   // Remove password from response
+//   const { password, ...userWithoutPassword } = updatedUser.toObject();
+
+//   return userWithoutPassword;
 // };
-
 const updateProfileToDB = async (
   user: JwtPayload,
   payload: Partial<IUser>
 ): Promise<Partial<IUser | null>> => {
   const { id } = user;
 
-  // Check if user exists
+  // Check if the user exists
   const existingUser = await User.isExistUserById(id);
   if (!existingUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
@@ -144,12 +163,18 @@ const updateProfileToDB = async (
 
   for (const field of fileFields) {
     if (payload[field as keyof IUser] && existingUser[field as keyof IUser]) {
-      // Unlink old file if new file is being uploaded
+      // If new files are being uploaded, unlink old files
       try {
-        unlinkFile(existingUser[field as keyof IUser] as string);
+        const oldFiles = existingUser[field as keyof IUser];
+        if (Array.isArray(oldFiles)) {
+          for (const oldFile of oldFiles) {
+            unlinkFile(oldFile as string);
+          }
+        } else {
+          unlinkFile(oldFiles as string);
+        }
       } catch (error) {
         console.error(`Failed to unlink old ${field}:`, error);
-        // Don't throw error, just log it as file might not exist
       }
     }
   }
@@ -163,11 +188,13 @@ const updateProfileToDB = async (
 
   const updatedUser = await userToUpdate.save();
 
-  // Remove password from response
   const { password, ...userWithoutPassword } = updatedUser.toObject();
 
   return userWithoutPassword;
 };
+
+
+
 
 const updateLocationToDB = async (user: JwtPayload, payload: { longitude: number; latitude: number }): Promise<IUser | null> => {
 
