@@ -23,6 +23,11 @@ const userSchema = new Schema<IUser, UserModal>(
       required: true,
     },
 
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
     email: {
       type: String,
       required: false,

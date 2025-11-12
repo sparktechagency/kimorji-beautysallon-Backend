@@ -9,53 +9,6 @@ import { IReservation } from "../reservation/reservation.interface";
 import mongoose from "mongoose";
 import { sendNotifications } from "../../../helpers/notificationsHelper";
 
-// const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Promise<string | null> => {
-//     const { price, service_name, id, tips } = payload;
-
-//     if (!service_name) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Service name is required");
-//     }
-
-//     if (!id) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Reservation ID is required");
-//     }
-
-//     // Create a checkout session
-//     const session = await stripe.checkout.sessions.create({
-//         payment_method_types: ["card"],
-//         mode: "payment",
-//         line_items: [
-//             {
-//                 price_data: {
-//                     currency: "AED",
-//                     product_data: {
-//                         name: `${service_name} Service Reservation Payment`,
-//                     },
-//                     unit_amount: price ? Math.trunc(price * 100) : Math.trunc(tips * 100),
-//                 },
-//                 quantity: 1,
-//             },
-//         ],
-//         customer_email: user?.email,
-//         success_url: "http://10.10.7.45:6008/api/v1/success",
-//         cancel_url: "http://10.10.7.45:6008/api/v1/cancelled"
-//     });
-
-//     if (!session) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to create Payment Checkout");
-//     } else {
-//         await Reservation.findOneAndUpdate(
-//             { _id: id },
-//             {
-//                 sessionId: session.id,
-//                 tips: tips ? Number(tips) : 0
-//             },
-//             { new: true }
-//         );
-//     }
-
-//     return session?.url;
-// };
 const createPaymentCheckoutToStripe = async (user: JwtPayload, payload: any): Promise<string | null> => {
     const { price, service_name, id, tips } = payload;
 

@@ -30,6 +30,7 @@ export type IUser = {
     about: string
     dateOfBirth: string;
     gender: "Male" | "Female" | "Children" | "Others";
+    isDeleted: boolean;
     profile: string;
     tradeLicences?: string;
     proofOwnerId?: string;

@@ -74,7 +74,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  const holderStatus = await Service.findOne({ barber: user.id, status: "Inactive" });
+  const holderStatus = await Service.findOne({ barber: user.id, status: "Inactive", });
 
   const totalServiceCount = await Reservation.countDocuments({ customer: user.id, status: "Completed", paymentStatus: "Paid" });
 
@@ -126,6 +126,7 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
 //     );
 //     return updateDoc;
 // };
+
 const updateProfileToDB = async (
   user: JwtPayload,
   payload: Partial<IUser>

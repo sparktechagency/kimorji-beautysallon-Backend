@@ -40,10 +40,23 @@ const createChangePasswordZodSchema = z.object({
     })
 });
 
+const verifyDeleteOTPSchema = z.object({
+    body: z.object({
+        otpCode: z
+            .string({
+                required_error: "OTP code is required",
+            })
+            .min(4, "OTP code must be at least 4 digits")
+            .max(6, "OTP code must not exceed 6 digits")
+            .regex(/^\d+$/, "OTP code must contain only numbers"),
+    }),
+});
+
 export const AuthValidation = {
     // verifyOtpSchema,
     createForgetPasswordZodSchema,
     // createLoginZodSchema,
     createResetPasswordZodSchema,
     createChangePasswordZodSchema,
+    verifyDeleteOTPSchema,
 };

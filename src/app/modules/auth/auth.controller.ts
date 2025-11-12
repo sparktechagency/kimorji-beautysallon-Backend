@@ -36,6 +36,7 @@ const verifyEmail = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+//email-super-admin
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const { ...loginData } = req.body;
   const result = await AuthService.loginUserFromDB(loginData);
@@ -49,27 +50,6 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-//  const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-//   try {
-//     const { mobileNumber, fcmToken, deviceId, role, deviceType } = req.body;
-
-//     if (!mobileNumber) {
-//       throw new AppError("Mobile number is required", 400);
-//     }
-
-//     // Call the service method for login or registration
-//     const result = await AuthService.loginService(mobileNumber, fcmToken, deviceId, role, deviceType);
-
-//     res.status(200).json({
-//       status: "success",
-//       message: result.message,
-//       userId: result.userId
-//     });
-
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -210,17 +190,46 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// const verifyOTP = catchAsync(async (req: Request, res: Response) => {
-//     const { mobileNumber, otpCode } = req.body;
-//     const result = await AuthService.verifyOTP(mobileNumber, otpCode);
+const softDeleteWitOtp = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.userId || req.params.id;
 
-//     sendResponse(res, {
-//         success: true,
-//         statusCode: StatusCodes.OK,
-//         message: 'OTP verified successfully',
-//         data: result
-//     });
-// });
+  const result = await AuthService.softDeleteUserWithOTP(userId);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: result.message,
+    data: {
+      verificationSid: result.verificationSid,
+    },
+  });
+});
+
+
+const softVerifyWitOtp = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.userId || req.params.id;
+  const { otpCode } = req.body;
+
+  // Validate OTP code
+  if (!otpCode) {
+    return sendResponse(res, {
+      statusCode: StatusCodes.BAD_REQUEST,
+      success: false,
+      message: "OTP code is required",
+      data: null,
+    });
+  }
+
+  const result = await AuthService.verifyOTPAndSoftDeleteUser(userId, otpCode);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
+
 
 export const AuthController = {
   // verifyMobile,
@@ -232,6 +241,8 @@ export const AuthController = {
   resendVerificationEmail,
   socialLogin,
   deleteUser,
+  softDeleteWitOtp,
+  softVerifyWitOtp,
   verifyEmail,
   login,
   verifyLoginOTP,

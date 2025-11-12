@@ -28,7 +28,7 @@ import { NextFunction } from 'express';
 import DeviceToken from '../fcmToken/fcm.token.model';
 
 
-//login
+//super-admin login
 const loginUserFromDB = async (payload: ILoginData) => {
 
   const { email, password, deviceToken } = payload;
@@ -37,7 +37,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  //check verified and status
   if (!isExistUser.verified) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Please verify your account, then try to login again');
   }
@@ -312,6 +311,7 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
 
 //   return { message, userId, accessToken, refreshToken };
 // };
+
 const loginService = async (
   mobileNumber: string,
   fcmToken: string,
@@ -319,10 +319,17 @@ const loginService = async (
   deviceType: string,
   role: USER_ROLES
 ) => {
-  // Validate role
   const validRoles = [USER_ROLES.CUSTOMER, USER_ROLES.BARBER];
   if (!validRoles.includes(role)) {
     throw new AppError(`Invalid role. Must be either ${USER_ROLES.CUSTOMER} or ${USER_ROLES.BARBER}`, 400);
+  }
+  //check isDeleted: false show temporary deleted user please  another account to login
+
+  if (role == USER_ROLES.CUSTOMER) {
+    const user = await User.findOne({ mobileNumber: mobileNumber, isDeleted: false, role: role });
+    if (!user) {
+      throw new AppError('User account not found. To continue, please create an account', 404);
+    }
   }
 
   const formattedNumber = formatPhoneNumber(mobileNumber);
@@ -406,59 +413,7 @@ const loginService = async (
 
   return { message, userId, accessToken, refreshToken };
 };
-// const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
-//   const formattedNumber = formatPhoneNumber(mobileNumber);
 
-//   const user = await User.findOne({ mobileNumber: formattedNumber }).select('+authentication');
-
-//   if (!user) {
-//     throw new AppError('User account was not found. Please create an account', 404);
-//   }
-
-//   const storedOtp = user.authentication?.otpCode;
-//   const expireAt = user.authentication?.expireAt;
-
-//   console.log('OTP submitted by user:', otpCode);
-//   console.log('Stored OTP in DB:', storedOtp);
-//   console.log('OTP expiration time:', expireAt);
-
-//   if (!storedOtp || storedOtp !== otpCode) {
-//     throw new AppError('Invalid OTP', 400);
-//   }
-
-//   const dateNow = new Date();
-//   console.log('Current time:', dateNow);
-
-//   if (!expireAt || dateNow > expireAt) {
-//     throw new AppError('OTP has expired, please request a new OTP', 400);
-//   }
-
-//   if (!user.verified) {
-//     await User.findOneAndUpdate(
-//       { _id: user._id },
-//       {
-//         verified: true,
-//         'authentication.otpCode': null,
-//         'authentication.expireAt': null
-//       }
-//     );
-//     console.log('User verified and OTP cleared.');
-//   }
-
-//   const accessToken = jwtHelper.createToken(
-//     { id: user._id, role: user.role },
-//     config.jwt.jwt_secret as Secret,
-//     config.jwt.jwt_expire_in as string
-//   );
-
-//   const refreshToken = jwtHelper.createToken(
-//     { id: user._id, role: user.role },
-//     config.jwt.jwtRefreshSecret as Secret,
-//     config.jwt.jwtRefreshExpiresIn as string
-//   );
-
-//   return { accessToken, refreshToken, user };
-// };
 const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);
 
@@ -726,6 +681,77 @@ const deleteUserFromDB = async (user: JwtPayload, password: string) => {
   return;
 };
 
+//soft delete user
+const softDeleteUserWithOTP = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  // Check if user is already deleted
+  if (user.isDeleted) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User account is already deleted");
+  }
+
+  // Check if user has mobile number
+  if (!user.mobileNumber) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Mobile number is required for account deletion verification"
+    );
+  }
+
+  // Send OTP via Twilio
+  const verificationSid = await sendTwilioOTP(user.mobileNumber);
+
+  return {
+    message: "OTP sent successfully to your registered mobile number",
+    verificationSid,
+  };
+};
+
+// Verify OTP and soft delete user
+const verifyOTPAndSoftDeleteUser = async (
+  userId: string,
+  otpCode: string
+) => {
+  // Check if user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  // Check if user is already deleted
+  if (user.isDeleted) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User account is already deleted");
+  }
+
+  // Check if user has mobile number
+  if (!user.mobileNumber) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Mobile number not found"
+    );
+  }
+
+  // Verify OTP
+  const isValidOTP = await verifyTwilioOTP(user.mobileNumber, otpCode);
+
+  if (!isValidOTP) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid or expired OTP");
+  }
+
+  // Soft delete the user
+  user.isDeleted = true;
+  await user.save();
+
+  return {
+    message: "User account deleted successfully",
+  };
+};
+
+
+
 export const AuthService = {
 
   loginUserFromDB,
@@ -736,6 +762,8 @@ export const AuthService = {
   resendVerificationEmailToDB,
   socialLoginFromDB,
   deleteUserFromDB,
+  softDeleteUserWithOTP,
+  verifyOTPAndSoftDeleteUser,
   // verifyOTP,
   verifyEmailToDB,
   loginService,

@@ -72,4 +72,15 @@ router.delete(
     AuthController.deleteUser
 );
 
+router.post(
+    '/soft-delete-otp/:id',
+    auth(USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER, USER_ROLES.SUPER_ADMIN),
+    AuthController.softDeleteWitOtp
+);
+router.post(
+    '/soft-verify-otp/:id',
+    auth(USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER, USER_ROLES.SUPER_ADMIN),
+    AuthController.softVerifyWitOtp
+);
+
 export const AuthRoutes = router;
