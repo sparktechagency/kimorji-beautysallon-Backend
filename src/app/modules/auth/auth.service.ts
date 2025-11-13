@@ -30,8 +30,8 @@ import DeviceToken from '../fcmToken/fcm.token.model';
 
 //super-admin login
 const loginUserFromDB = async (payload: ILoginData) => {
-
   const { email, password, deviceToken } = payload;
+
   const isExistUser: any = await User.findOne({ email }).select('+password');
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
@@ -41,25 +41,25 @@ const loginUserFromDB = async (payload: ILoginData) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Please verify your account, then try to login again');
   }
 
-  //check match password
+  // Check password match
   if (password && !(await User.isMatchPassword(password, isExistUser.password))) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
   }
 
+  // Update device token
   await User.findOneAndUpdate(
     { _id: isExistUser._id },
     { deviceToken: deviceToken },
     { new: true },
-  )
+  );
 
-  //create token
+  // Create JWT tokens
   const accessToken = jwtHelper.createToken(
     { id: isExistUser._id, role: isExistUser.role, email: isExistUser.email },
     config.jwt.jwt_secret as Secret,
     config.jwt.jwt_expire_in as string
   );
 
-  //create token
   const refreshToken = jwtHelper.createToken(
     { id: isExistUser._id, role: isExistUser.role, email: isExistUser.email },
     config.jwt.jwtRefreshSecret as Secret,
@@ -68,6 +68,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
   return { accessToken, refreshToken };
 };
+
 
 const forgetPasswordToDB = async (email: string) => {
 
@@ -192,126 +193,6 @@ const verifyEmailToDB = async (payload: IVerifyEmail) => {
   return { data, message };
 };
 
-// const loginService = async (
-//   mobileNumber: string,
-//   fcmToken: string,
-//   deviceId: string,
-//   deviceType: string,
-//   role: USER_ROLES
-// ) => {
-//   // Validate role
-//   const validRoles = [USER_ROLES.CUSTOMER, USER_ROLES.BARBER];
-//   if (!validRoles.includes(role)) {
-//     throw new AppError(`Invalid role. Must be either ${USER_ROLES.CUSTOMER} or ${USER_ROLES.BARBER}`, 400);
-//   }
-
-//   const formattedNumber = formatPhoneNumber(mobileNumber);
-
-//   let existingUser = await User.findOne({ mobileNumber: formattedNumber });
-//   let message = '';
-//   let userId = '';
-
-//   if (!existingUser) {
-//     const newUser = new User({
-//       mobileNumber: formattedNumber,
-//       verified: false,
-//       role: role
-//     });
-
-//     await newUser.save();
-//     message = "Please verify your registration OTP and add this number";
-//     userId = newUser._id.toString();
-
-//     // const otpCode = generateOTP();
-//     // console.log('Generated OTP for registration:', otpCode);
-
-//     await sendTwilioOTP(formattedNumber);
-
-//     // const authentication = {
-//     //   otpCode: otpCode.toString(),
-//     //   expireAt: new Date(Date.now() + 3 * 60000),
-//     // };
-
-//     // console.log('Saving OTP and expiration time:', authentication);
-
-//     const updatedUser = await User.findOneAndUpdate(
-//       { _id: newUser._id },
-//       // { $set: { authentication } },
-//       { new: true }
-//     );
-
-//     console.log('User after saving OTP:', updatedUser?.authentication);
-//   } else {
-//     // Check if existing user's role matches the provided role
-//     if (existingUser.role !== role) {
-//       throw new AppError(`User is registered as ${existingUser.role}, cannot login as ${role}`, 403);
-//     }
-
-//     message = "Please verify your login OTP";
-//     userId = existingUser._id.toString();
-
-//     const otpCode = generateOTP();
-//     console.log('Generated OTP for login:', otpCode);
-
-//     await sendTwilioOTP(formattedNumber);
-
-//     const authentication = {
-//       otpCode: otpCode.toString(),
-//       expireAt: new Date(Date.now() + 3 * 60000),
-//     };
-
-//     console.log('Saving OTP and expiration time:', authentication);
-
-//     const updatedUser = await User.findOneAndUpdate(
-//       { _id: existingUser._id },
-//       { $set: { authentication } },
-//       { new: true }
-//     );
-
-//     console.log('User after saving OTP:', updatedUser?.authentication);
-//   }
-
-//   if (fcmToken && deviceId) {
-//     const existingToken = await DeviceToken.findOne({
-//       userId: existingUser?._id || userId,
-//       deviceId: deviceId
-//     });
-
-//     if (existingToken) {
-//       existingToken.fcmToken = fcmToken;
-//       existingToken.deviceType = deviceType;
-//       await existingToken.save();
-//     } else {
-//       await DeviceToken.create({
-//         userId: existingUser?._id || userId,
-//         fcmToken,
-//         deviceId,
-//         deviceType
-//       });
-//     }
-//   }
-
-//   const user = existingUser || (await User.findOne({ _id: userId }));
-
-//   if (!user) {
-//     throw new AppError('User not found after registration/login process', 404);
-//   }
-
-//   const accessToken = jwtHelper.createToken(
-//     { id: user._id, role: user.role },
-//     config.jwt.jwt_secret as Secret,
-//     config.jwt.jwt_expire_in as string
-//   );
-
-//   const refreshToken = jwtHelper.createToken(
-//     { id: user._id, role: user.role },
-//     config.jwt.jwtRefreshSecret as Secret,
-//     config.jwt.jwtRefreshExpiresIn as string
-//   );
-
-//   return { message, userId, accessToken, refreshToken };
-// };
-
 const loginService = async (
   mobileNumber: string,
   fcmToken: string,
@@ -319,17 +200,10 @@ const loginService = async (
   deviceType: string,
   role: USER_ROLES
 ) => {
+  // Validate role
   const validRoles = [USER_ROLES.CUSTOMER, USER_ROLES.BARBER];
   if (!validRoles.includes(role)) {
     throw new AppError(`Invalid role. Must be either ${USER_ROLES.CUSTOMER} or ${USER_ROLES.BARBER}`, 400);
-  }
-  //check isDeleted: false show temporary deleted user please  another account to login
-
-  if (role == USER_ROLES.CUSTOMER) {
-    const user = await User.findOne({ mobileNumber: mobileNumber, isDeleted: false, role: role });
-    if (!user) {
-      throw new AppError('User account not found. To continue, please create an account', 404);
-    }
   }
 
   const formattedNumber = formatPhoneNumber(mobileNumber);
@@ -339,7 +213,6 @@ const loginService = async (
   let userId = '';
 
   if (!existingUser) {
-    // New user registration
     const newUser = new User({
       mobileNumber: formattedNumber,
       verified: false,
@@ -347,16 +220,29 @@ const loginService = async (
     });
 
     await newUser.save();
-    message = "Please verify your registration OTP";
+    message = "Please verify your registration OTP and add this number";
     userId = newUser._id.toString();
 
-    // Send OTP via Twilio Verify (Twilio manages the OTP)
+    // const otpCode = generateOTP();
+    // console.log('Generated OTP for registration:', otpCode);
+
     await sendTwilioOTP(formattedNumber);
 
-    console.log('✅ New user registered, OTP sent to:', formattedNumber);
+    // const authentication = {
+    //   otpCode: otpCode.toString(),
+    //   expireAt: new Date(Date.now() + 3 * 60000),
+    // };
 
+    // console.log('Saving OTP and expiration time:', authentication);
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: newUser._id },
+      // { $set: { authentication } },
+      { new: true }
+    );
+
+    console.log('User after saving OTP:', updatedUser?.authentication);
   } else {
-    // Existing user login
     // Check if existing user's role matches the provided role
     if (existingUser.role !== role) {
       throw new AppError(`User is registered as ${existingUser.role}, cannot login as ${role}`, 403);
@@ -365,13 +251,27 @@ const loginService = async (
     message = "Please verify your login OTP";
     userId = existingUser._id.toString();
 
-    // Send OTP via Twilio Verify (Twilio manages the OTP)
+    const otpCode = generateOTP();
+    console.log('Generated OTP for login:', otpCode);
+
     await sendTwilioOTP(formattedNumber);
 
-    console.log('✅ Existing user login, OTP sent to:', formattedNumber);
+    const authentication = {
+      otpCode: otpCode.toString(),
+      expireAt: new Date(Date.now() + 3 * 60000),
+    };
+
+    console.log('Saving OTP and expiration time:', authentication);
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: existingUser._id },
+      { $set: { authentication } },
+      { new: true }
+    );
+
+    console.log('User after saving OTP:', updatedUser?.authentication);
   }
 
-  // Handle FCM token
   if (fcmToken && deviceId) {
     const existingToken = await DeviceToken.findOne({
       userId: existingUser?._id || userId,
@@ -398,7 +298,6 @@ const loginService = async (
     throw new AppError('User not found after registration/login process', 404);
   }
 
-  // Generate tokens (these are for session management, not OTP)
   const accessToken = jwtHelper.createToken(
     { id: user._id, role: user.role },
     config.jwt.jwt_secret as Secret,
@@ -413,6 +312,7 @@ const loginService = async (
 
   return { message, userId, accessToken, refreshToken };
 };
+
 
 const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
   const formattedNumber = formatPhoneNumber(mobileNumber);

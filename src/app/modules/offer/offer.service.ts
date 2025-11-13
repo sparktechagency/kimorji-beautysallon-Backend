@@ -108,9 +108,7 @@ const addOfferToDB = async (
   // The post-save hook will update the service
   return offer;
 };
-/**
- * Find the best offer (highest percent) for service at a given Date (server local)
- */
+
 
 const findOfferForServiceAt = async (serviceId: string | Types.ObjectId, datetime = new Date()) => {
   const day = WEEKDAYS[datetime.getDay()];

@@ -12,7 +12,7 @@ const createPrivacyPolicyToDB = async (payload: IRule) => {
     if (isExistPrivacy) {
 
         // update privacy is exist 
-        const result = await Rule.findOneAndUpdate({type: 'privacy'}, {content: payload?.content}, {new: true})
+        const result = await Rule.findOneAndUpdate({ type: 'privacy' }, { content: payload?.content }, { new: true })
         const message = "Privacy & Policy Updated successfully"
         return { message, result }
     } else {
@@ -20,14 +20,14 @@ const createPrivacyPolicyToDB = async (payload: IRule) => {
         // create new if not exist
         const result = await Rule.create({ ...payload, type: 'privacy' })
         const message = "Privacy & Policy Created successfully"
-        return {message, result}
+        return { message, result }
     }
 }
 
 const getPrivacyPolicyFromDB = async () => {
     const result = await Rule.findOne({ type: 'privacy' })
     if (!result) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Privacy policy doesn't exist!")
+        return { message: "Privacy & Policy not found", }
     }
     return result
 }
@@ -37,10 +37,10 @@ const createTermsAndConditionToDB = async (payload: IRule) => {
 
     const isExistTerms = await Rule.findOne({ type: 'terms' })
     if (isExistTerms) {
-        const result = await Rule.findOneAndUpdate({type: 'terms'}, {content: payload?.content}, {new: true})
+        const result = await Rule.findOneAndUpdate({ type: 'terms' }, { content: payload?.content }, { new: true })
         const message = "Terms And Condition Updated successfully"
         return { message, result }
-  
+
     } else {
         const result = await Rule.create({ ...payload, type: 'terms' });
         const message = "Terms And Condition Created Successfully"
@@ -51,7 +51,7 @@ const createTermsAndConditionToDB = async (payload: IRule) => {
 const getTermsAndConditionFromDB = async () => {
     const result = await Rule.findOne({ type: 'terms' })
     if (!result) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Terms and conditions doesn't  exist!")
+        return { message: "Terms and conditions not found", }
     }
     return result
 }
@@ -61,7 +61,7 @@ const createAboutToDB = async (payload: IRule) => {
 
     const isExistAbout = await Rule.findOne({ type: 'about' })
     if (isExistAbout) {
-        const result = await Rule.findOneAndUpdate({type: 'about'}, {content: payload?.content}, {new: true})
+        const result = await Rule.findOneAndUpdate({ type: 'about' }, { content: payload?.content }, { new: true })
         const message = "About Us Updated successfully"
         return { message, result }
     } else {
@@ -70,16 +70,17 @@ const createAboutToDB = async (payload: IRule) => {
         return { message, result }
     }
 }
-  
+
 const getAboutFromDB = async () => {
 
     const result = await Rule.findOne({ type: 'about' })
     if (!result) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "About doesn't exist!")
+        //empty response if about us not found
+        return { message: "About us not found", }
     }
     return result
 }
-  
+
 export const RuleService = {
     createPrivacyPolicyToDB,
     getPrivacyPolicyFromDB,

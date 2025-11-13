@@ -169,11 +169,7 @@ userSchema.statics.isExistUserByMobileNumber = async (mobileNumber: string) => {
   return isExist;
 };
 
-//account check
-// userSchema.statics.isAccountCreated = async (id: string) => {
-//   const isUserExist: any = await User.findById(id);
-//   return isUserExist.accountInformation.status;
-// };
+
 userSchema.statics.isAccountCreated = async (id: string) => {
   const user = await User.findById(id).select('accountInformation')
   return !!(user && user.accountInformation && user.accountInformation.status)
@@ -188,7 +184,8 @@ userSchema.statics.isMatchPassword = async (password: string, hashPassword: stri
   return await bcrypt.compare(password, hashPassword);
 };
 
-// Updated pre-save middleware section only
+
+
 userSchema.pre('save', async function (next) {
   const user = this as IUser;
 
@@ -208,48 +205,13 @@ userSchema.pre('save', async function (next) {
     }
   }
 
-
-  if (user.role === USER_ROLES.BARBER || user.role === USER_ROLES.CUSTOMER) {
-    if (!user.accountInformation) {
-      user.accountInformation = {
-        status: false
-      };
-    }
-
-    if (user.discount === undefined) {
-      user.discount = 0;
-    }
-
-    if (!user.about) {
-      user.about = '';
-    }
-
-    // if role is BARBER the isSubscribe initially set as false
-    if (user.isSubscribed === undefined) {
-      user.isSubscribed = false;
-    }
+  if (user.password) {
+    user.password = await bcrypt.hash(user.password, Number(config.bcrypt_salt_rounds));
   }
-
-  // Apply isUpdate logic to all users (not just BARBER)
-  const hasTradelicences = Array.isArray(user.tradeLicences)
-    ? user.tradeLicences.length > 0
-    : Boolean(user.tradeLicences && String(user.tradeLicences).trim() !== '');
-  const hasProofOwnerId = Array.isArray(user.proofOwnerId)
-    ? user.proofOwnerId.length > 0
-    : Boolean(user.proofOwnerId && String(user.proofOwnerId).trim() !== '');
-  const hasSallonPhoto = Array.isArray(user.sallonPhoto)
-    ? user.sallonPhoto.length > 0
-    : Boolean(user.sallonPhoto && String(user.sallonPhoto).trim() !== '');
-
-  // Only set isUpdate to true when ALL three fields have values
-  user.isUpdate = !!(hasTradelicences && hasProofOwnerId && hasSallonPhoto);
-  // this.password = await bcrypt.hash(
-  //   this.password,
-  //   Number(config.bcrypt_salt_rounds)
-  // );
 
   next();
 });
+
 
 
 export const User = model<IUser, UserModal>("User", userSchema);
