@@ -20,7 +20,6 @@ export async function initRedis() {
     if (!redis.isOpen) {
         await redis.connect();
     }
-    // Optional sanity check
     try {
         await redis.ping();
         console.log('[Redis] PING ok');

@@ -20,6 +20,7 @@ import { ReportRoutes } from '../modules/report/report.routes';
 import { PaymentRoutes } from '../modules/payment/payment.routes';
 import { OfferRoutes } from '../modules/offer/offer.routes';
 import { BarberDashboardRoutes } from '../modules/dashboard/barber/barber.routes';
+import { ShopScheduledRoutes } from '../modules/shopScheduled/scheduled.route';
 const router = express.Router();
 
 const apiRoutes = [
@@ -39,6 +40,7 @@ const apiRoutes = [
     { path: "/service", route: ServiceRoutes },
     { path: "/portfolio", route: PortfolioRoutes },
     { path: "/barber", route: BarberRoutes },
+    { path: "/shop", route: ShopScheduledRoutes },
     { path: "/barber-stat", route: BarberDashboardRoutes },
     { path: "/reservation", route: ReservationRoutes },
     { path: "/report", route: ReportRoutes },
