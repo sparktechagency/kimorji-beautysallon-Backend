@@ -32,10 +32,28 @@ router.get(
     RecommendedController.getRecommendedServices
 );
 
+
 router.get(
     '/bestForYou',
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
-    RecommendedController.getServicesByLocation
+    (req: Request, res: Response, next: NextFunction) => {
+        const { latitude, longitude, maxDistance = 10000, page = 1, limit = 10 } = req.query;
+
+        RecommendedService.getServicesByLocation(
+            parseFloat(latitude as string),
+            parseFloat(longitude as string),
+            parseInt(maxDistance as string),
+            parseInt(page as string),
+            parseInt(limit as string),
+            req.user?.id
+        ).then(result => {
+            res.json({
+                success: true,
+                message: "Location-based services retrieved successfully",
+                data: result.services
+            });
+        }).catch(next);
+    }
 );
 router.patch(
     '/:id',

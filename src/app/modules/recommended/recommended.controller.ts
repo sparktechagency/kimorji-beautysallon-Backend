@@ -41,7 +41,7 @@ const getServicesByLocation = catchAsync(async (req: Request, res: Response) => 
     const { latitude, longitude, maxDistance = 10000, page = 1, limit = 20 } = req.query;
     const customerId = req.user?.id;
 
-    console.log("Customer ID:", customerId); // Debug
+    console.log("Customer ID:", customerId);
 
     if (!latitude || !longitude) {
         return sendResponse(res, {
@@ -65,14 +65,7 @@ const getServicesByLocation = catchAsync(async (req: Request, res: Response) => 
         statusCode: StatusCodes.OK,
         success: true,
         message: "Location-based services retrieved successfully",
-        data: {
-            services: result.services,
-            meta: {
-                page: parseInt(page as string) || 1,
-                limit: parseInt(limit as string) || 20,
-                total: result.total,
-            },
-        },
+        data: result,
     });
 });
 
