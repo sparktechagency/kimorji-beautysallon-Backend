@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/discount',
     auth(USER_ROLES.BARBER),
-    async (req: Request, res:Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             req.body = { discount: Number(req.body.discount) };
             next();
@@ -18,9 +18,11 @@ router.post('/discount',
 );
 
 router.get('/profile',
-    auth(USER_ROLES.BARBER),
+    auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
     BarberController.barberDetails
 );
+
+
 
 router.get('/offer',
     BarberController.specialOfferBarber
@@ -35,6 +37,7 @@ router.get('/recommended',
 );
 
 router.get('/customer/:id',
+    auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
     BarberController.getBarberProfile
 );
 

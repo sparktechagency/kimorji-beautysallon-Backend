@@ -94,7 +94,7 @@ const getServicesByLocation = async (
                 $geoNear: {
                     near: {
                         type: "Point",
-                        coordinates: [longitude, latitude],  // Ensure these are in [longitude, latitude] format
+                        coordinates: [longitude, latitude],
                     },
                     distanceField: "distance",
                     maxDistance: maxDistance,
@@ -123,14 +123,13 @@ const getServicesByLocation = async (
         if (nearbyBarbers.length === 0) {
             console.log("❌ No barbers found nearby");
             return {
-                service: null,
+                services: [],
                 total: 0,
             };
         }
 
         const barberIds = nearbyBarbers.map((barber) => barber._id);
 
-        // Count total services
         const total = await Service.countDocuments({
             barber: { $in: barberIds },
             status: "Active",
@@ -140,37 +139,42 @@ const getServicesByLocation = async (
         if (skip >= total && total > 0) {
             console.log(`⚠️  Skip (${skip}) >= Total (${total}). Adjusting to page 1.`);
 
-            const service = await Service.findOne({
+            const services = await Service.find({
                 barber: { $in: barberIds },
                 status: "Active",
             })
                 .populate("barber", "name profile mobileNumber address location verified")
                 .populate("category", "name")
                 .populate("title", "name")
-                .select("-dailySchedule -bookedSlots")  // Exclude `dailySchedule` and `bookedSlots`
+                .select("-dailySchedule -bookedSlots")
                 .sort({ createdAt: -1 })
+                .limit(limit)
                 .lean();
 
-            console.log(`✓ Returning the first service (adjusted to page 1)`);
+            console.log(`✓ Query returned ${services.length} services`);
 
-            // Add distance information to the service
-            const serviceWithDistance = {
-                ...service,
-                barberDistance: service && nearbyBarbers.length > 0 ? Math.round(nearbyBarbers[0].distance) : null,
-                distanceInKm: service && nearbyBarbers.length > 0 ? (nearbyBarbers[0].distance / 1000).toFixed(2) : null,
-            };
+            const servicesWithDistance = services.map((service: any) => {
+                const barberInfo = nearbyBarbers.find(
+                    (b) => b._id.toString() === service.barber._id.toString()
+                );
+
+                return {
+                    ...service,
+                    barberDistance: barberInfo ? Math.round(barberInfo.distance) : null,
+                    distanceInKm: barberInfo ? (barberInfo.distance / 1000).toFixed(2) : null,
+                };
+            });
 
             console.log("=== DEBUG Complete ===\n");
 
             return {
-                service: serviceWithDistance,
-                total,
-                adjustedToPage1: true,
+                services: servicesWithDistance,
+
             };
         }
 
-        // Get the first service based on the barbers found
-        const service = await Service.findOne({
+        // Get the services based on the barbers found
+        const services = await Service.find({
             barber: { $in: barberIds },
             status: "Active",
         })
@@ -183,19 +187,25 @@ const getServicesByLocation = async (
             .limit(limit)
             .lean();
 
-        console.log(`✓ Query returned the first service`);
+        console.log(`✓ Query returned ${services.length} services`);
 
-        // Add distance information to the service
-        const serviceWithDistance = {
-            ...service,
-            barberDistance: service && nearbyBarbers.length > 0 ? Math.round(nearbyBarbers[0].distance) : null,
-            distanceInKm: service && nearbyBarbers.length > 0 ? (nearbyBarbers[0].distance / 1000).toFixed(2) : null,
-        };
+        // Add distance information to each service
+        const servicesWithDistance = services.map((service: any) => {
+            const barberInfo = nearbyBarbers.find(
+                (b) => b._id.toString() === service.barber._id.toString()
+            );
+
+            return {
+                ...service,
+                barberDistance: barberInfo ? Math.round(barberInfo.distance) : null,
+                distanceInKm: barberInfo ? (barberInfo.distance / 1000).toFixed(2) : null,
+            };
+        });
 
         console.log("=== DEBUG Complete ===\n");
 
         return {
-            service: serviceWithDistance,
+            services: servicesWithDistance,  // Return services as an array
             total,
         };
 
@@ -210,6 +220,8 @@ const getServicesByLocation = async (
         throw error;
     }
 };
+
+
 
 
 export const RecommendedService = {

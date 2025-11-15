@@ -8,20 +8,39 @@ import { Secret } from "jsonwebtoken";
 import config from "../../../config";
 
 const getBarberProfile = catchAsync(async (req: Request, res: Response) => {
-    const token = req.body.token;
-    let user: any;
-    if(token) {
-        user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
-    }
-    const result = await BarberService.getBarberProfileFromDB(user, req.params.id, req.query);
+    const barberId = req.params.id; // URL parameter থেকে barber ID
+    const customerId = req.user?.id; // JWT token থেকে customer ID
+
+    // Debug logs
+    console.log("=== Get Barber Profile ===");
+    console.log("Customer ID:", customerId);
+    console.log("Barber ID:", barberId);
+
+    const result = await BarberService.barberDetailsFromDB(barberId, customerId);
 
     sendResponse(res, {
-        statusCode: StatusCodes.OK,
+        statusCode: 200,
         success: true,
         message: "Barber profile found",
         data: result
     });
 });
+
+// const getBarberProfile = catchAsync(async (req: Request, res: Response) => {
+//     const token = req.body.token;
+//     let user: any;
+//     if (token) {
+//         user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
+//     }
+//     const result = await BarberService.getBarberProfileFromDB(user, req.params.id, req.query);
+
+//     sendResponse(res, {
+//         statusCode: StatusCodes.OK,
+//         success: true,
+//         message: "Barber profile found",
+//         data: result
+//     });
+// });
 
 const getCustomerProfile = catchAsync(async (req: Request, res: Response) => {
     const result = await BarberService.getCustomerProfileFromDB(req.params.id);
@@ -48,7 +67,7 @@ const makeDiscount = catchAsync(async (req: Request, res: Response) => {
 const specialOfferBarber = catchAsync(async (req: Request, res: Response) => {
     const token = req.body.token;
     let user: any;
-    if(token) {
+    if (token) {
         user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
     }
     const result = await BarberService.specialOfferBarberFromDB(user, req.query);
@@ -64,7 +83,7 @@ const specialOfferBarber = catchAsync(async (req: Request, res: Response) => {
 const recommendedBarber = catchAsync(async (req: Request, res: Response) => {
     const token = req.body.token;
     let user: any;
-    if(token) {
+    if (token) {
         user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
     }
     const result = await BarberService.recommendedBarberFromDB(user, req.query);
@@ -80,7 +99,7 @@ const recommendedBarber = catchAsync(async (req: Request, res: Response) => {
 const getBarberList = catchAsync(async (req: Request, res: Response) => {
     const token = req.body.token;
     let user: any;
-    if(token) {
+    if (token) {
         user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
     }
 
@@ -96,7 +115,7 @@ const getBarberList = catchAsync(async (req: Request, res: Response) => {
 
 
 const barberDetails = catchAsync(async (req: Request, res: Response) => {
-    const result = await BarberService.barberDetailsFromDB(req.user);
+    const result = await BarberService.barberDetailsFromDB2(req.user);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,

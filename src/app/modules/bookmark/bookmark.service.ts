@@ -34,6 +34,7 @@ const toggleBookmark = async (payload: { customer: string, barber: string }): Pr
 };
 
 
+
 const getBookmark = async (user: JwtPayload, query: Record<string, any>): Promise<IBookmark[]> => {
 
     const { coordinates } = query;

@@ -392,7 +392,7 @@ const getBarberListFromDB = async (user: JwtPayload, query: Record<string, any>)
     return data;
 }
 
-const barberDetailsFromDB = async (user: JwtPayload): Promise<{}> => {
+const barberDetailsFromDB2 = async (user: JwtPayload): Promise<{}> => {
 
     const [barber, portfolios, reviews, rating]: any = await Promise.all([
         User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth").lean(),
@@ -438,6 +438,61 @@ const barberDetailsFromDB = async (user: JwtPayload): Promise<{}> => {
     return result;
 }
 
+const barberDetailsFromDB = async (barberId: string, customerId?: string): Promise<{}> => {
+    console.log("Service - Customer ID:", customerId, "Barber ID:", barberId); // Debug
+
+    const [barber, portfolios, reviews, rating, bookmark]: any = await Promise.all([
+        User.findById(barberId).select("name email profile accountInformation about address contact gender dateOfBirth").lean(),
+        Portfolio.find({ barber: barberId }).select("image"),
+        Review.find({ barber: barberId }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating"),
+        Review.aggregate([
+            {
+                $match: { barber: new mongoose.Types.ObjectId(barberId) }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRatingCount: { $sum: 1 },
+                    totalRating: { $sum: "$rating" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    totalRatingCount: 1,
+                    averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
+                }
+            }
+        ]),
+        customerId ? Bookmark.findOne({
+            customer: new mongoose.Types.ObjectId(customerId),
+            barber: new mongoose.Types.ObjectId(barberId)
+        }) : null
+    ]);
+
+    console.log("Bookmark result:", bookmark); // Debug
+
+    if (!barber) {
+        throw new Error("Barber not found");
+    }
+
+    const result = {
+        ...barber,
+        rating: {
+            totalRatingCount: rating[0]?.totalRatingCount || 0,
+            averageRating: rating[0]?.averageRating || 0
+        },
+        satisfiedClients: rating[0]?.totalRatingCount || 0,
+        portfolios,
+        reviews,
+        isBookmarked: !!bookmark
+    }
+
+    return result;
+}
+
+
+
 export const BarberService = {
     getBarberProfileFromDB,
     getCustomerProfileFromDB,
@@ -445,5 +500,6 @@ export const BarberService = {
     specialOfferBarberFromDB,
     recommendedBarberFromDB,
     getBarberListFromDB,
-    barberDetailsFromDB
+    barberDetailsFromDB,
+    barberDetailsFromDB2
 }
