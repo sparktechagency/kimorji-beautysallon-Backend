@@ -4,12 +4,12 @@ import { ServiceType } from "../../../enums/serviceType";
 import { IUser } from "../user/user.interface";
 export type IScheduleItem = {
   day: string;
-  timeSlot: string[]; // Array of time slots like ["09:00", "10:00", "11:00"]
+  timeSlot: string[];
 };
 
 export type IBookedSlot = {
-  date: string; // "YYYY-MM-DD"
-  timeSlot: string; // "HH:mm" - single time slot
+  date: string;
+  timeSlot: string;
   Day: Day;
   reservationId: Types.ObjectId;
 };
