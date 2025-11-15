@@ -69,7 +69,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
   return { accessToken, refreshToken };
 };
 
-
 const forgetPasswordToDB = async (email: string) => {
 
   const isExistUser = await User.isExistUserByEmail(email);
@@ -358,6 +357,7 @@ const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
 
   return { accessToken, refreshToken, user };
 };
+
 const resetPasswordToDB = async (token: string, payload: IAuthResetPassword) => {
 
   const { newPassword, confirmPassword } = payload;
@@ -649,7 +649,6 @@ const verifyOTPAndSoftDeleteUser = async (
     message: "User account deleted successfully",
   };
 };
-
 
 
 export const AuthService = {

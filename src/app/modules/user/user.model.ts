@@ -32,7 +32,8 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
       unique: false,
-      immutable: true,
+      default: '',
+      // immutable: true,
       lowercase: true,
     },
 
@@ -68,6 +69,7 @@ const userSchema = new Schema<IUser, UserModal>(
       required: false,
       default: []
     },
+
     proofOwnerId: {
       type: [String],
       required: false,

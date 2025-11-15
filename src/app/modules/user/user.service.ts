@@ -67,90 +67,157 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
 };
 
 
+// const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
+//   const { id } = user;
+//   const isExistUser: any = await User.findById(id).lean();
+//   if (!isExistUser) {
+//     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+//   }
+
+//   const holderStatus = await Service.findOne({ barber: user.id, status: "Inactive", });
+
+//   const totalServiceCount = await Reservation.countDocuments({ customer: user.id, status: "Completed", paymentStatus: "Paid" });
+
+//   const totalSpend = await Reservation.aggregate([
+//     {
+//       $match: {
+//         customer: user.id,
+//         status: "Completed",
+//         paymentStatus: "Paid"
+//       }
+//     },
+//     {
+//       $group: {
+//         _id: null,
+//         totalSpend: { $sum: "$price" }
+//       }
+//     }
+//   ]);
+
+//   const data = {
+//     ...isExistUser,
+//     totalServiceCount,
+//     hold: !!holderStatus,
+//     totalSpend: totalSpend[0]?.totalSpend || 0
+//   }
+
+//   return data;
+// };
 const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
-  const { id } = user;
-  const isExistUser: any = await User.findById(id).lean();
+  const { id } = user
+  const isExistUser: any = await User.findById(id).lean()
   if (!isExistUser) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!")
   }
 
-  const holderStatus = await Service.findOne({ barber: user.id, status: "Inactive", });
+  const holderStatus = await Service.findOne({
+    barber: user.id,
+    status: "Inactive",
+  })
 
-  const totalServiceCount = await Reservation.countDocuments({ customer: user.id, status: "Completed", paymentStatus: "Paid" });
+  const totalServiceCount = await Reservation.countDocuments({
+    customer: user.id,
+    status: "Completed",
+    paymentStatus: "Paid",
+  })
 
   const totalSpend = await Reservation.aggregate([
     {
       $match: {
         customer: user.id,
         status: "Completed",
-        paymentStatus: "Paid"
-      }
+        paymentStatus: "Paid",
+      },
     },
     {
       $group: {
         _id: null,
-        totalSpend: { $sum: "$price" }
-      }
-    }
-  ]);
+        totalSpend: { $sum: "$price" },
+      },
+    },
+  ])
 
   const data = {
     ...isExistUser,
+    email: isExistUser.email,
     totalServiceCount,
     hold: !!holderStatus,
-    totalSpend: totalSpend[0]?.totalSpend || 0
+    totalSpend: totalSpend[0]?.totalSpend || 0,
   }
 
-  return data;
-};
+  return data
+}
 
 const updateProfileToDB = async (
-  user: JwtPayload,
-  payload: Partial<IUser>
-): Promise<Partial<IUser | null>> => {
-  const { id } = user;
+  authUser: JwtPayload,
+  payload: Partial<IUser>,
+): Promise<Partial<IUser>> => {
+  const { id, role } = authUser
 
-  const existingUser = await User.isExistUserById(id);
-  if (!existingUser) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  const user = await User.findById(id)
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!")
   }
 
-  const fileFields = ['profile', 'tradeLicences', 'sallonPhoto', 'proofOwnerId'];
+  if (
+    (role === USER_ROLES.ADMIN || role === USER_ROLES.SUPER_ADMIN) &&
+    payload.email
+  ) {
+    delete payload.email
+  }
 
-  for (const field of fileFields) {
-    if (payload[field as keyof IUser] && existingUser[field as keyof IUser]) {
-      try {
-        const oldFiles = existingUser[field as keyof IUser];
-        if (Array.isArray(oldFiles)) {
-          for (const oldFile of oldFiles) {
-            unlinkFile(oldFile as string);
-          }
-        } else {
-          unlinkFile(oldFiles as string);
-        }
-      } catch (error) {
-        console.error(`Failed to unlink old ${field}:`, error);
-      }
+  if (payload.email && role !== USER_ROLES.ADMIN && role !== USER_ROLES.SUPER_ADMIN) {
+    const existingEmailUser = await User.findOne({
+      email: payload.email.toLowerCase(),
+      _id: { $ne: id },
+    })
+    if (existingEmailUser) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Email already in use")
     }
   }
 
-  const userToUpdate = await User.findById(id);
-  if (!userToUpdate) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User not found for update!");
+  const updatedUser = await User.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  }).lean()
+
+  if (!updatedUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to update profile")
   }
 
-  Object.assign(userToUpdate, payload);
+  const holderStatus = await Service.findOne({
+    barber: id,
+    status: "Inactive",
+  })
 
-  const updatedUser = await userToUpdate.save();
+  const totalServiceCount = await Reservation.countDocuments({
+    customer: id,
+    status: "Completed",
+    paymentStatus: "Paid",
+  })
 
-  const { password, ...userWithoutPassword } = updatedUser.toObject();
+  const totalSpend = await Reservation.aggregate([
+    {
+      $match: {
+        customer: id,
+        status: "Completed",
+        paymentStatus: "Paid",
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalSpend: { $sum: "$price" },
+      },
+    },
+  ])
 
-  return userWithoutPassword;
-};
+  return {
+    ...updatedUser,
+    email: updatedUser.email,
 
-
-
-
+  }
+}
 const updateLocationToDB = async (user: JwtPayload, payload: { longitude: number; latitude: number }): Promise<IUser | null> => {
 
   const result = await User.findByIdAndUpdate(
