@@ -13,7 +13,7 @@ const router = express.Router();
 router.post('/', auth(USER_ROLES.BARBER), ServiceController.createService);
 router.get('/barber', auth(USER_ROLES.BARBER), ServiceController.getAllServicesbarber);
 router.get('/all', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER), ServiceController.getAllServices);
-router.get('/recommended', (req: Request, res: Response, next: NextFunction) => {
+router.get('/recommended', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER), (req: Request, res: Response, next: NextFunction) => {
     const { latitude, longitude, maxDistance = 10000, limit = 10 } = req.query;
     RecommendedService.getRecommendedServices(
         parseFloat(latitude as string),
@@ -22,7 +22,7 @@ router.get('/recommended', (req: Request, res: Response, next: NextFunction) => 
         parseInt(limit as string)
     ).then(result => res.json(result)).catch(next);
 });
-router.get('/bestForYou', (req: Request, res: Response, next: NextFunction) => {
+router.get('/bestForYou', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER), (req: Request, res: Response, next: NextFunction) => {
     const { latitude, longitude, maxDistance = 10000, limit = 10 } = req.query;
     RecommendedService.getServicesByLocation(
         parseFloat(latitude as string),

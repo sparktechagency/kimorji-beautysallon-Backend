@@ -59,7 +59,7 @@ const getServicesByLocation = catchAsync(async (req: Request, res: Response) => 
         success: true,
         message: "Location-based services retrieved successfully",
         data: {
-            services: result.services,
+            services: result,
             meta: {
                 page: parseInt(page as string),
                 limit: parseInt(limit as string),
