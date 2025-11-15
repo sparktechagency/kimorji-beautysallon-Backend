@@ -48,7 +48,8 @@ const getRecommendedServices = async (
         barber: { $in: barberIds },
         status: "Active",
     })
-        .populate("barber", "name profile mobileNumber address location verified")
+        .select("-dailySchedule -bookedSlots ")
+        .populate("barber", "name profile mobileNumber address location verified ")
         .populate("category", "name")
         .populate("title", "name")
         .sort({ rating: -1, totalRating: -1 })
