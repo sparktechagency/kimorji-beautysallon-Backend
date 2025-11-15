@@ -33,7 +33,7 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
     });
 });
 
-// Get all services based on location only
+
 const getServicesByLocation = catchAsync(async (req: Request, res: Response) => {
     const { latitude, longitude, maxDistance = 10000, page = 1, limit = 20 } = req.query;
 
