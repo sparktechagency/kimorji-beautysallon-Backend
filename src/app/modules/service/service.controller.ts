@@ -7,7 +7,6 @@ import ApiError from '../../../errors/ApiError';
 import { logger } from '../../../shared/logger';
 import { PaginatedResult } from '../../../helpers/pagination.interface';
 
-//pass values stringyfy when used form data values or when used body json not need
 const createService = catchAsync(async (req: Request, res: Response) => {
   logger.info('Starting createService request');
   const barber = req.user?.id;
@@ -36,21 +35,17 @@ const createService = catchAsync(async (req: Request, res: Response) => {
     logger.debug(`Request body: ${JSON.stringify(req.body)}`);
     logger.debug(`Uploaded files: ${JSON.stringify(req.files)}`);
 
-    // Parse and validate dailySchedule
     let parsedDailySchedule: any = undefined;
     if (req.body?.dailySchedule) {
       try {
-        // Parse if it's a JSON string
         const scheduleData = typeof req.body.dailySchedule === 'string'
           ? JSON.parse(req.body.dailySchedule)
           : req.body.dailySchedule;
 
-        // Validate it's an array
         if (!Array.isArray(scheduleData)) {
           throw new Error("dailySchedule must be an array");
         }
 
-        // Validate each schedule item
         scheduleData.forEach((item: any, idx: number) => {
           if (!item.day) {
             throw new Error(`dailySchedule[${idx}] must have 'day' property`);
@@ -74,7 +69,6 @@ const createService = catchAsync(async (req: Request, res: Response) => {
       }
     }
 
-    // Build service data
     const serviceData = {
       ...req.body,
       dailySchedule: parsedDailySchedule ?? req.body.dailySchedule,
@@ -96,31 +90,13 @@ const createService = catchAsync(async (req: Request, res: Response) => {
       });
     } catch (error) {
       logger.error(`Error creating service: ${error}`);
-      throw error; // Let catchAsync handle the error
+      throw error;
     }
   });
 });
 
 
-// const getAllServices = catchAsync(async (req: Request, res: Response) => {
-//   const user = req.user;
-//   if (!user?.location?.coordinates) {
-//     return res.status(400).json({ success: false, message: 'User location not available' });
-//   }
 
-//   const [lng, lat] = req.user.location.coordinates;
-//   const services = await ServiceService.getAllServices(
-//     { page: 1, totalPage: 0, limit: 10, total: 0 },
-//     { lat, lng }
-//   );
-
-//   res.status(httpStatus.OK).json({
-//     success: true,
-//     message: 'Services retrieved successfully',
-//     data: services,
-//   });
-// });
-// Controller
 const getAllServices = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
   if (!user?.location?.coordinates) {
