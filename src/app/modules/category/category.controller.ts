@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import catchAsync from '../../../shared/catchAsync'
 import sendResponse from '../../../shared/sendResponse'
@@ -29,6 +29,21 @@ const getCategories = catchAsync(async (req: Request, res: Response) => {
     })
 })
 
+const getCategoryWithSubCategories = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+        const result = await CategoryService.getAllCategoriesWithSubcategories();
+
+        sendResponse(res, {
+            success: true,
+            statusCode: 200,
+            message: 'Categories and Subcategories fetched successfully',
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 const getAllSubCategories = catchAsync(async (req: Request, res: Response) => {
     logger.info('Starting getAllSubCategories request');
@@ -110,5 +125,6 @@ export const CategoryController = {
     deleteCategory,
     getCategoryForBarber,
     adminGetCategories,
-    getAllSubCategories
+    getAllSubCategories,
+    getCategoryWithSubCategories
 }

@@ -34,6 +34,27 @@ const getCategoriesFromDB = async (): Promise<ICategory[]> => {
   return result;
 }
 
+//get category with-subcategories with pagination
+const getAllCategoriesWithSubcategories = async () => {
+  const categories = await Category.find();
+
+  if (!categories) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'No categories found');
+  }
+
+  const categoriesWithSubcategories = await Promise.all(
+    categories.map(async (category) => {
+      const subcategories = await SubCategory.find({ category: category._id });
+      return {
+        category,
+        subcategories
+      };
+    })
+  );
+
+  return categoriesWithSubcategories;
+};
+
 const getAllSubCategories = async ({ page, limit, searchTerm, categoryId }: PaginationOptions): Promise<PaginatedResult> => {
   logger.info(`Starting getAllSubCategories: page=${page}, limit=${limit}, searchTerm=${searchTerm}, categoryId=${categoryId}`);
 
@@ -171,5 +192,6 @@ export const CategoryService = {
   deleteCategoryToDB,
   getCategoryForBarberFromDB,
   adminCategoriesFromDB,
-  getAllSubCategories
+  getAllSubCategories,
+  getAllCategoriesWithSubcategories
 }
