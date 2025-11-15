@@ -28,4 +28,7 @@ const getBookmark = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-export const BookmarkController = { toggleBookmark, getBookmark }
+export const BookmarkController = {
+    toggleBookmark,
+    getBookmark
+}

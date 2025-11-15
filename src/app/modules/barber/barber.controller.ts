@@ -8,10 +8,8 @@ import { Secret } from "jsonwebtoken";
 import config from "../../../config";
 
 const getBarberProfile = catchAsync(async (req: Request, res: Response) => {
-    const barberId = req.params.id; // URL parameter থেকে barber ID
-    const customerId = req.user?.id; // JWT token থেকে customer ID
-
-    // Debug logs
+    const barberId = req.params.id;
+    const customerId = req.user?.id;
     console.log("=== Get Barber Profile ===");
     console.log("Customer ID:", customerId);
     console.log("Barber ID:", barberId);

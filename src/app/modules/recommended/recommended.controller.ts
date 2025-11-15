@@ -8,6 +8,9 @@ import { Request, Response } from "express";
 
 const getRecommendedServices = catchAsync(async (req: Request, res: Response) => {
     const { latitude, longitude, maxDistance = 10000, limit = 10 } = req.query;
+    const customerId = req.user?.id;
+
+    console.log("Customer ID:", customerId); // Debug
 
     if (!latitude || !longitude) {
         return sendResponse(res, {
@@ -21,8 +24,9 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
     const result = await RecommendedService.getRecommendedServices(
         parseFloat(latitude as string),
         parseFloat(longitude as string),
-        parseInt(maxDistance as string),
-        parseInt(limit as string)
+        parseInt(maxDistance as string) || 10000,
+        parseInt(limit as string) || 10,
+        customerId
     );
 
     sendResponse(res, {
@@ -33,9 +37,11 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
     });
 });
 
-
 const getServicesByLocation = catchAsync(async (req: Request, res: Response) => {
     const { latitude, longitude, maxDistance = 10000, page = 1, limit = 20 } = req.query;
+    const customerId = req.user?.id;
+
+    console.log("Customer ID:", customerId); // Debug
 
     if (!latitude || !longitude) {
         return sendResponse(res, {
@@ -49,9 +55,10 @@ const getServicesByLocation = catchAsync(async (req: Request, res: Response) => 
     const result = await RecommendedService.getServicesByLocation(
         parseFloat(latitude as string),
         parseFloat(longitude as string),
-        parseInt(maxDistance as string),
-        parseInt(page as string),
-        parseInt(limit as string)
+        parseInt(maxDistance as string) || 10000,
+        parseInt(page as string) || 1,
+        parseInt(limit as string) || 20,
+        customerId
     );
 
     sendResponse(res, {
@@ -61,13 +68,14 @@ const getServicesByLocation = catchAsync(async (req: Request, res: Response) => 
         data: {
             services: result.services,
             meta: {
-                page: parseInt(page as string),
-                limit: parseInt(limit as string),
+                page: parseInt(page as string) || 1,
+                limit: parseInt(limit as string) || 20,
                 total: result.total,
             },
         },
     });
 });
+
 
 export const RecommendedController = {
     getRecommendedServices,

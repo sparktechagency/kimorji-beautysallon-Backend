@@ -15,16 +15,13 @@ const toggleBookmark = async (payload: { customer: string, barber: string }): Pr
         throw new ApiError(StatusCodes.NOT_ACCEPTABLE, "Invalid Barber ID")
     }
 
-    // Check if the bookmark already exists
     const existingBookmark = await Bookmark.findOne(payload);
 
     if (existingBookmark) {
-        // If the bookmark exists, delete it
         await Bookmark.findByIdAndDelete(existingBookmark._id);
         return "Bookmark Remove successfully";
     } else {
 
-        // If the bookmark doesn't exist, create it
         const result = await Bookmark.create(payload);
         if (!result) {
             throw new ApiError(StatusCodes.EXPECTATION_FAILED, "Failed to add bookmark");

@@ -38,16 +38,15 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
             {
                 $group: {
                     _id: null,
-                    totalRatingCount: { $sum: 1 }, // Count the total number of ratings
-                    totalRating: { $sum: "$rating" } // Calculate the sum of all ratings
+                    totalRatingCount: { $sum: 1 },
+                    totalRating: { $sum: "$rating" }
                 }
             },
             {
-                // Project the desired fields and calculate the average rating
                 $project: {
                     _id: 0,
                     totalRatingCount: 1,
-                    averageRating: { $divide: ["$totalRating", "$totalRatingCount"] } // Calculate average rating
+                    averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
                 }
             }
         ]),
@@ -327,7 +326,6 @@ const getBarberListFromDB = async (user: JwtPayload, query: Record<string, any>)
         });
     }
 
-    // Additional filters for other fields
     if (Object.keys(othersQuery).length) {
 
         anyConditions.push({
@@ -405,16 +403,15 @@ const barberDetailsFromDB2 = async (user: JwtPayload): Promise<{}> => {
             {
                 $group: {
                     _id: null,
-                    totalRatingCount: { $sum: 1 }, // Count the total number of ratings
-                    totalRating: { $sum: "$rating" } // Calculate the sum of all ratings
+                    totalRatingCount: { $sum: 1 },
+                    totalRating: { $sum: "$rating" }
                 }
             },
             {
-                // Project the desired fields and calculate the average rating
                 $project: {
                     _id: 0,
                     totalRatingCount: 1,
-                    averageRating: { $divide: ["$totalRating", "$totalRatingCount"] } // Calculate average rating
+                    averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
                 }
             }
         ])
