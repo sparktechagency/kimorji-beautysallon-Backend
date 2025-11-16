@@ -99,12 +99,12 @@ class MonitoringService {
         // Calculate total requests and errors
         let totalRequests = 0;
         let totalErrors = 0;
-        let totalMemory = 0;
+        let totalWorkerMemory = 0;
 
         this.workerMetrics.forEach(metrics => {
             totalRequests += metrics.requests || 0;
             totalErrors += metrics.errors || 0;
-            totalMemory += metrics.memory?.heapUsed || 0;
+            totalWorkerMemory += metrics.memory?.heapUsed || 0;
         });
 
         // Calculate system-wide metrics

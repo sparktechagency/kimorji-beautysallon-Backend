@@ -143,14 +143,13 @@ const getRecommendedServices = async (
     maxDistance: number = 10000,
     limit: number = 10,
     customerId?: string,
-    search?: string,      // NEW: Search keyword parameter
-    minPrice?: number,    // NEW: Minimum price parameter
-    maxPrice?: number,    // NEW: Maximum price parameter
-    bestForYou?: boolean  // NEW: Best for you filter
+    search?: string,
+    minPrice?: number,
+    maxPrice?: number,
+    bestForYou?: boolean
 ) => {
-    // Determine the distance and sorting based on bestForYou flag
-    const effectiveMaxDistance = bestForYou ? 500000 : maxDistance; // 500km = 500000 meters
-    const sortByRating = !bestForYou; // Only sort by rating when NOT bestForYou
+    const effectiveMaxDistance = bestForYou ? 500000 : maxDistance;
+    const sortByRating = !bestForYou;
 
     // Find nearby barbers
     const nearbyBarbers = await User.aggregate([
@@ -220,22 +219,20 @@ const getRecommendedServices = async (
             .select("-dailySchedule -bookedSlots")
             .populate("barber", "name profile mobileNumber address location verified")
             .populate("category", "name")
-            .populate("title", "name")
-            .sort({ createdAt: -1 }) // Sort by newest first, not by rating
+            .populate("title", "name title")
+            .sort({ createdAt: -1 })
             .lean();
     } else {
-        // Normal behavior: sort by rating and apply limit
         recommendedServices = await Service.find(query)
             .select("-dailySchedule -bookedSlots")
             .populate("barber", "name profile mobileNumber address location verified")
-            .populate("category", "name")
-            .populate("title", "name")
-            .sort({ rating: -1, totalRating: -1 }) // Sort by highest rating
+            .populate("category", "name title")
+            .populate("title", "name title")
+            .sort({ rating: -1, totalRating: -1 })
             .limit(limit)
             .lean();
     }
 
-    // Filter by barber name if search is provided (post-populate filter)
     let filteredServices = recommendedServices;
     if (search && search.trim() !== "") {
         const searchLower = search.toLowerCase();
