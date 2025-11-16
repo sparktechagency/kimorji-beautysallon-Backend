@@ -7,6 +7,7 @@ import { Review } from "../review/review.model";
  * Debug helper to check why services are not showing
  * Call this function to diagnose the issue
  */
+
 export const debugLocationServices = async (barberId: string) => {
     console.log("=== DEBUG: Starting diagnosis ===\n");
 

@@ -1,3 +1,4 @@
+import { SubCategory } from './../subCategory/subCategory.model';
 import { StatusCodes } from "http-status-codes";
 import ApiError from "../../../errors/ApiError";
 import { Service } from "../service/service.model";
@@ -137,6 +138,7 @@ import mongoose from "mongoose";
 
 //     return servicesWithDistance;
 // };
+
 const getRecommendedServices = async (
     latitude: number,
     longitude: number,
@@ -144,6 +146,8 @@ const getRecommendedServices = async (
     limit: number = 10,
     customerId?: string,
     search?: string,
+    category?: string,
+    SubCategory?: string,
     minPrice?: number,
     maxPrice?: number,
     bestForYou?: boolean
@@ -186,13 +190,11 @@ const getRecommendedServices = async (
 
     const barberIds = nearbyBarbers.map((barber) => barber._id);
 
-    // Build query with search and price filters
     const query: any = {
         barber: { $in: barberIds },
         status: "Active",
     };
 
-    // NEW: Add price range filter
     if (minPrice !== undefined || maxPrice !== undefined) {
         query.price = {};
         if (minPrice !== undefined) {
@@ -203,7 +205,6 @@ const getRecommendedServices = async (
         }
     }
 
-    // NEW: Add search filter (searches in description and barber name)
     if (search && search.trim() !== "") {
         query.$or = [
             { description: { $regex: search, $options: "i" } },
@@ -214,7 +215,6 @@ const getRecommendedServices = async (
     let recommendedServices;
 
     if (bestForYou) {
-        // When bestForYou is true, don't limit results and don't sort by rating
         recommendedServices = await Service.find(query)
             .select("-dailySchedule -bookedSlots")
             .populate("barber", "name profile mobileNumber address location verified")
@@ -233,23 +233,37 @@ const getRecommendedServices = async (
             .lean();
     }
 
+
+
     let filteredServices = recommendedServices;
     if (search && search.trim() !== "") {
         const searchLower = search.toLowerCase();
         filteredServices = recommendedServices.filter((service: any) => {
             const barberName = service.barber?.name?.toLowerCase() || "";
-            const categoryName = service.category?.name?.toLowerCase() || "";
+            // const categoryName = service.category?.name?.toLowerCase() || "";
             const titleName = service.title?.name?.toLowerCase() || "";
             const description = service.description?.toLowerCase() || "";
             const serviceType = service.serviceType?.toLowerCase() || "";
 
             return (
                 barberName.includes(searchLower) ||
-                categoryName.includes(searchLower) ||
+                // categoryName.includes(searchLower) ||
                 titleName.includes(searchLower) ||
                 description.includes(searchLower) ||
                 serviceType.includes(searchLower)
             );
+        });
+    }
+
+    // category subcategory filter
+    if (category && category.trim() !== "") {
+        filteredServices = filteredServices.filter((service: any) => {
+            return service.category?.name === category;
+        });
+    }
+    if (SubCategory && SubCategory.trim() !== "") {
+        filteredServices = filteredServices.filter((service: any) => {
+            return service.title?.title === SubCategory;
         });
     }
 

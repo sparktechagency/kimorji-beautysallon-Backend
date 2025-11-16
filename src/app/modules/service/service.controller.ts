@@ -74,7 +74,7 @@ const createService = catchAsync(async (req: Request, res: Response) => {
       dailySchedule: parsedDailySchedule ?? req.body.dailySchedule,
       barber,
       image: req.files && 'image' in req.files && req.files['image'][0]
-        ? `/uploads/images/${req.files['image'][0].filename}`
+        ? `/images/${req.files['image'][0].filename}`
         : undefined,
     };
 
@@ -217,7 +217,7 @@ const updateService = catchAsync(async (req: Request, res: Response) => {
     const serviceData = {
       ...req.body,
       image: req.files && 'image' in req.files && req.files['image'][0]
-        ? `/uploads/images/${req.files['image'][0].filename}`
+        ? `/images/${req.files['image'][0].filename}`
         : undefined,
     };
 

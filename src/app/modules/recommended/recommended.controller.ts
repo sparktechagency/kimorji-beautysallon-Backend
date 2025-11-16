@@ -74,6 +74,8 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
         maxDistance = 10000,
         limit = 10,
         search,
+        category,
+        SubCategory,
         minPrice,
         maxPrice,
         bestForYou
@@ -117,6 +119,8 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
         parseInt(limit as string) || 10,
         customerId,
         search as string,
+        category as string,
+        SubCategory as string,
         minPrice ? parseFloat(minPrice as string) : undefined,
         maxPrice ? parseFloat(maxPrice as string) : undefined,
         bestForYou === 'true'
