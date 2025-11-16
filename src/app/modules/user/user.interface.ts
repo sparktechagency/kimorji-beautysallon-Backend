@@ -40,6 +40,7 @@ export type IUser = {
     isUpdate: boolean;
     verified: boolean;
     discount?: number;
+    shopDiscount?: number;
     deviceToken?: string;
     // authentication?: IAuthenticationProps;
     // authentication: IAuthenticationProps;

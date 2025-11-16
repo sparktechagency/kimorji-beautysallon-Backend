@@ -52,7 +52,7 @@ const getCustomerProfile = catchAsync(async (req: Request, res: Response) => {
 });
 
 const makeDiscount = catchAsync(async (req: Request, res: Response) => {
-    const result = await BarberService.makeDiscountToDB(req.user, req.body.discount);
+    const result = await BarberService.makeDiscountToDB(req.user, req.body.shopDiscount);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,

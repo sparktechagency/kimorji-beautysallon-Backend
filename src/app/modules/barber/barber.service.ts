@@ -116,9 +116,9 @@ const getCustomerProfileFromDB = async (customer: string): Promise<{}> => {
     return result;
 }
 
-const makeDiscountToDB = async (user: JwtPayload, discount: number): Promise<IUser> => {
+const makeDiscountToDB = async (user: JwtPayload, shopDiscount: number): Promise<IUser> => {
 
-    const updateDoc: any = User.findOneAndUpdate({ _id: user.id }, { discount: discount }, { new: true });
+    const updateDoc: any = User.findOneAndUpdate({ _id: user.id }, { shopDiscount: shopDiscount }, { new: true });
     if (!updateDoc) {
         throw new ApiError(StatusCodes.BAD_REQUEST, "Failed to update discount");
     }

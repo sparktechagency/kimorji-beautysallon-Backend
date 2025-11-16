@@ -450,7 +450,7 @@ const getAllServices = async (
     .populate('category')
     .populate('title')
     .populate('serviceType')
-    .populate('barber', 'name email profile contact location')
+    .populate('barber', 'name email profile contact location shopDiscount')
     .sort(sort)
     .skip((pagination.page - 1) * pagination.limit)
     .limit(pagination.limit);

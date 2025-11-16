@@ -6,6 +6,137 @@ import { Bookmark } from "../bookmark/bookmark.model";
 import mongoose from "mongoose";
 
 
+// const getRecommendedServices = async (
+//     latitude: number,
+//     longitude: number,
+//     maxDistance: number = 10000,
+//     limit: number = 10,
+//     customerId?: string,
+//     search?: string,
+//     minPrice?: number,
+//     maxPrice?: number
+// ) => {
+//     // Find nearby barbers
+//     const nearbyBarbers = await User.aggregate([
+//         {
+//             $geoNear: {
+//                 near: {
+//                     type: "Point",
+//                     coordinates: [longitude, latitude],
+//                 },
+//                 distanceField: "distance",
+//                 maxDistance: maxDistance,
+//                 spherical: true,
+//                 query: {
+//                     role: "BARBER",
+//                     isDeleted: false,
+//                     location: { $exists: true },
+//                     "location.coordinates": { $exists: true, $ne: [] },
+//                 },
+//             },
+//         },
+//         {
+//             $project: {
+//                 _id: 1,
+//                 name: 1,
+//                 distance: 1,
+//                 verified: 1,
+//             },
+//         },
+//     ]);
+
+//     if (nearbyBarbers.length === 0) {
+//         return [];
+//     }
+
+//     const barberIds = nearbyBarbers.map((barber) => barber._id);
+
+//     // Build query with search and price filters
+//     const query: any = {
+//         barber: { $in: barberIds },
+//         status: "Active",
+//     };
+
+//     // NEW: Add price range filter
+//     if (minPrice !== undefined || maxPrice !== undefined) {
+//         query.price = {};
+//         if (minPrice !== undefined) {
+//             query.price.$gte = minPrice;
+//         }
+//         if (maxPrice !== undefined) {
+//             query.price.$lte = maxPrice;
+//         }
+//     }
+
+//     // NEW: Add search filter (searches in description and barber name)
+//     if (search && search.trim() !== "") {
+//         query.$or = [
+//             { description: { $regex: search, $options: "i" } },
+//             { serviceType: { $regex: search, $options: "i" } },
+//         ];
+//     }
+
+//     const recommendedServices = await Service.find(query)
+//         .select("-dailySchedule -bookedSlots")
+//         .populate("barber", "name profile mobileNumber address location verified")
+//         .populate("category", "name")
+//         .populate("title", "name")
+//         .sort({ rating: -1, totalRating: -1 })
+//         .limit(limit)
+//         .lean();
+
+//     // Filter by barber name if search is provided (post-populate filter)
+//     let filteredServices = recommendedServices;
+//     if (search && search.trim() !== "") {
+//         const searchLower = search.toLowerCase();
+//         filteredServices = recommendedServices.filter((service: any) => {
+//             const barberName = service.barber?.name?.toLowerCase() || "";
+//             const categoryName = service.category?.name?.toLowerCase() || "";
+//             const titleName = service.title?.name?.toLowerCase() || "";
+//             const description = service.description?.toLowerCase() || "";
+//             const serviceType = service.serviceType?.toLowerCase() || "";
+
+//             return (
+//                 barberName.includes(searchLower) ||
+//                 categoryName.includes(searchLower) ||
+//                 titleName.includes(searchLower) ||
+//                 description.includes(searchLower) ||
+//                 serviceType.includes(searchLower)
+//             );
+//         });
+//     }
+
+//     // Add bookmark status for each service
+//     const servicesWithBookmarkStatus = await Promise.all(
+//         filteredServices.map(async (service: any) => {
+//             if (!customerId) {
+//                 return { ...service, isBookmarked: false };
+//             }
+//             const isBookmarked = await Bookmark.exists({
+//                 customer: new mongoose.Types.ObjectId(customerId),
+//                 barber: service.barber._id,
+//             });
+//             return {
+//                 ...service,
+//                 isBookmarked: !!isBookmarked,
+//             };
+//         })
+//     );
+
+//     // Add distance information
+//     const servicesWithDistance = servicesWithBookmarkStatus.map((service: any) => {
+//         const barberInfo = nearbyBarbers.find(
+//             (b) => b._id.toString() === service.barber._id.toString()
+//         );
+//         return {
+//             ...service,
+//             barberDistance: barberInfo ? Math.round(barberInfo.distance) : null,
+//             distanceInKm: barberInfo ? (barberInfo.distance / 1000).toFixed(2) : null,
+//         };
+//     });
+
+//     return servicesWithDistance;
+// };
 const getRecommendedServices = async (
     latitude: number,
     longitude: number,
@@ -14,8 +145,13 @@ const getRecommendedServices = async (
     customerId?: string,
     search?: string,      // NEW: Search keyword parameter
     minPrice?: number,    // NEW: Minimum price parameter
-    maxPrice?: number     // NEW: Maximum price parameter
+    maxPrice?: number,    // NEW: Maximum price parameter
+    bestForYou?: boolean  // NEW: Best for you filter
 ) => {
+    // Determine the distance and sorting based on bestForYou flag
+    const effectiveMaxDistance = bestForYou ? 500000 : maxDistance; // 500km = 500000 meters
+    const sortByRating = !bestForYou; // Only sort by rating when NOT bestForYou
+
     // Find nearby barbers
     const nearbyBarbers = await User.aggregate([
         {
@@ -25,7 +161,7 @@ const getRecommendedServices = async (
                     coordinates: [longitude, latitude],
                 },
                 distanceField: "distance",
-                maxDistance: maxDistance,
+                maxDistance: effectiveMaxDistance,
                 spherical: true,
                 query: {
                     role: "BARBER",
@@ -76,14 +212,28 @@ const getRecommendedServices = async (
         ];
     }
 
-    const recommendedServices = await Service.find(query)
-        .select("-dailySchedule -bookedSlots")
-        .populate("barber", "name profile mobileNumber address location verified")
-        .populate("category", "name")
-        .populate("title", "name")
-        .sort({ rating: -1, totalRating: -1 })
-        .limit(limit)
-        .lean();
+    let recommendedServices;
+
+    if (bestForYou) {
+        // When bestForYou is true, don't limit results and don't sort by rating
+        recommendedServices = await Service.find(query)
+            .select("-dailySchedule -bookedSlots")
+            .populate("barber", "name profile mobileNumber address location verified")
+            .populate("category", "name")
+            .populate("title", "name")
+            .sort({ createdAt: -1 }) // Sort by newest first, not by rating
+            .lean();
+    } else {
+        // Normal behavior: sort by rating and apply limit
+        recommendedServices = await Service.find(query)
+            .select("-dailySchedule -bookedSlots")
+            .populate("barber", "name profile mobileNumber address location verified")
+            .populate("category", "name")
+            .populate("title", "name")
+            .sort({ rating: -1, totalRating: -1 }) // Sort by highest rating
+            .limit(limit)
+            .lean();
+    }
 
     // Filter by barber name if search is provided (post-populate filter)
     let filteredServices = recommendedServices;

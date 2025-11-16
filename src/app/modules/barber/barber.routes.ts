@@ -8,7 +8,7 @@ router.post('/discount',
     auth(USER_ROLES.BARBER),
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            req.body = { discount: Number(req.body.discount) };
+            req.body = { shopDiscount: Number(req.body.shopDiscount) };
             next();
         } catch (error) {
             next(error);

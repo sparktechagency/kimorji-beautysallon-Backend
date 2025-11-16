@@ -149,6 +149,9 @@ const userSchema = new Schema<IUser, UserModal>(
       accountUrl: { type: String },
       currency: { type: String },
     },
+    shopDiscount: {
+      type: Number,
+    },
 
     discount: {
       type: Number,

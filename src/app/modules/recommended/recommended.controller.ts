@@ -6,11 +6,20 @@ import { RecommendedService } from "./recommended.service";
 import { Request, Response } from "express";
 
 
-// const getRecommendedServices = catchAsync(async (req: Request, res: Response) => {
-//     const { latitude, longitude, maxDistance = 10000, limit = 10 } = req.query;
-//     const customerId = req.user?.id;
 
-//     console.log("Customer ID:", customerId); // Debug
+// const getRecommendedServices = catchAsync(async (req: Request, res: Response) => {
+//     const {
+//         latitude,
+//         longitude,
+//         maxDistance = 10000,
+//         limit = 10,
+//         search,        // NEW: Keyword search
+//         minPrice,      // NEW: Minimum price filter
+//         maxPrice       // NEW: Maximum price filter
+//     } = req.query;
+
+//     const customerId = req.user?.id;
+//     console.log("Customer ID:", customerId);
 
 //     if (!latitude || !longitude) {
 //         return sendResponse(res, {
@@ -21,12 +30,34 @@ import { Request, Response } from "express";
 //         });
 //     }
 
+//     // Validate price filters
+//     if (minPrice && isNaN(parseFloat(minPrice as string))) {
+//         return sendResponse(res, {
+//             statusCode: StatusCodes.BAD_REQUEST,
+//             success: false,
+//             message: "Invalid minPrice value",
+//             data: null,
+//         });
+//     }
+
+//     if (maxPrice && isNaN(parseFloat(maxPrice as string))) {
+//         return sendResponse(res, {
+//             statusCode: StatusCodes.BAD_REQUEST,
+//             success: false,
+//             message: "Invalid maxPrice value",
+//             data: null,
+//         });
+//     }
+
 //     const result = await RecommendedService.getRecommendedServices(
 //         parseFloat(latitude as string),
 //         parseFloat(longitude as string),
 //         parseInt(maxDistance as string) || 10000,
 //         parseInt(limit as string) || 10,
-//         customerId
+//         customerId,
+//         search as string,
+//         minPrice ? parseFloat(minPrice as string) : undefined,
+//         maxPrice ? parseFloat(maxPrice as string) : undefined
 //     );
 
 //     sendResponse(res, {
@@ -36,17 +67,16 @@ import { Request, Response } from "express";
 //         data: result,
 //     });
 // });
-
-
 const getRecommendedServices = catchAsync(async (req: Request, res: Response) => {
     const {
         latitude,
         longitude,
         maxDistance = 10000,
         limit = 10,
-        search,        // NEW: Keyword search
-        minPrice,      // NEW: Minimum price filter
-        maxPrice       // NEW: Maximum price filter
+        search,
+        minPrice,
+        maxPrice,
+        bestForYou
     } = req.query;
 
     const customerId = req.user?.id;
@@ -86,9 +116,11 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
         parseInt(maxDistance as string) || 10000,
         parseInt(limit as string) || 10,
         customerId,
-        search as string,                          // NEW: Pass search keyword
-        minPrice ? parseFloat(minPrice as string) : undefined,  // NEW: Pass minPrice
-        maxPrice ? parseFloat(maxPrice as string) : undefined   // NEW: Pass maxPrice
+        search as string,
+        minPrice ? parseFloat(minPrice as string) : undefined,
+        maxPrice ? parseFloat(maxPrice as string) : undefined,
+        bestForYou === 'true'
+
     );
 
     sendResponse(res, {
@@ -98,6 +130,7 @@ const getRecommendedServices = catchAsync(async (req: Request, res: Response) =>
         data: result,
     });
 });
+
 
 const getServicesByLocation = catchAsync(async (req: Request, res: Response) => {
     const { latitude, longitude, maxDistance = 10000, page = 1, limit = 20 } = req.query;
