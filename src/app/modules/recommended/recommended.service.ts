@@ -11,8 +11,12 @@ const getRecommendedServices = async (
     longitude: number,
     maxDistance: number = 10000,
     limit: number = 10,
-    customerId?: string
+    customerId?: string,
+    search?: string,      // NEW: Search keyword parameter
+    minPrice?: number,    // NEW: Minimum price parameter
+    maxPrice?: number     // NEW: Maximum price parameter
 ) => {
+    // Find nearby barbers
     const nearbyBarbers = await User.aggregate([
         {
             $geoNear: {
@@ -47,10 +51,32 @@ const getRecommendedServices = async (
 
     const barberIds = nearbyBarbers.map((barber) => barber._id);
 
-    const recommendedServices = await Service.find({
+    // Build query with search and price filters
+    const query: any = {
         barber: { $in: barberIds },
         status: "Active",
-    })
+    };
+
+    // NEW: Add price range filter
+    if (minPrice !== undefined || maxPrice !== undefined) {
+        query.price = {};
+        if (minPrice !== undefined) {
+            query.price.$gte = minPrice;
+        }
+        if (maxPrice !== undefined) {
+            query.price.$lte = maxPrice;
+        }
+    }
+
+    // NEW: Add search filter (searches in description and barber name)
+    if (search && search.trim() !== "") {
+        query.$or = [
+            { description: { $regex: search, $options: "i" } },
+            { serviceType: { $regex: search, $options: "i" } },
+        ];
+    }
+
+    const recommendedServices = await Service.find(query)
         .select("-dailySchedule -bookedSlots")
         .populate("barber", "name profile mobileNumber address location verified")
         .populate("category", "name")
@@ -59,18 +85,37 @@ const getRecommendedServices = async (
         .limit(limit)
         .lean();
 
+    // Filter by barber name if search is provided (post-populate filter)
+    let filteredServices = recommendedServices;
+    if (search && search.trim() !== "") {
+        const searchLower = search.toLowerCase();
+        filteredServices = recommendedServices.filter((service: any) => {
+            const barberName = service.barber?.name?.toLowerCase() || "";
+            const categoryName = service.category?.name?.toLowerCase() || "";
+            const titleName = service.title?.name?.toLowerCase() || "";
+            const description = service.description?.toLowerCase() || "";
+            const serviceType = service.serviceType?.toLowerCase() || "";
+
+            return (
+                barberName.includes(searchLower) ||
+                categoryName.includes(searchLower) ||
+                titleName.includes(searchLower) ||
+                description.includes(searchLower) ||
+                serviceType.includes(searchLower)
+            );
+        });
+    }
+
     // Add bookmark status for each service
     const servicesWithBookmarkStatus = await Promise.all(
-        recommendedServices.map(async (service: any) => {
+        filteredServices.map(async (service: any) => {
             if (!customerId) {
                 return { ...service, isBookmarked: false };
             }
-
             const isBookmarked = await Bookmark.exists({
                 customer: new mongoose.Types.ObjectId(customerId),
                 barber: service.barber._id,
             });
-
             return {
                 ...service,
                 isBookmarked: !!isBookmarked,
@@ -78,11 +123,11 @@ const getRecommendedServices = async (
         })
     );
 
+    // Add distance information
     const servicesWithDistance = servicesWithBookmarkStatus.map((service: any) => {
         const barberInfo = nearbyBarbers.find(
             (b) => b._id.toString() === service.barber._id.toString()
         );
-
         return {
             ...service,
             barberDistance: barberInfo ? Math.round(barberInfo.distance) : null,
@@ -92,6 +137,7 @@ const getRecommendedServices = async (
 
     return servicesWithDistance;
 };
+
 
 const getServicesByLocation = async (
     latitude: number,
@@ -158,7 +204,7 @@ const getServicesByLocation = async (
         })
             .populate("barber", "name profile mobileNumber address location verified")
             .populate("category", "name")
-            .populate("title", "name")
+            .populate("title", "name title")
             .select("-dailySchedule -bookedSlots")
             .sort({ createdAt: -1 })
             .skip(skip)

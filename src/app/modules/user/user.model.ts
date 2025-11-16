@@ -12,6 +12,15 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
     },
+    ownerName: {
+      type: String,
+      required: false,
+    },
+
+    sallonType: {
+      type: String,
+      required: false,
+    },
     appId: {
       type: String,
       required: false,

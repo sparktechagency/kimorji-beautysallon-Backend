@@ -18,6 +18,8 @@ interface IAuthenticationProps {
 export type IUser = {
     _id: any;
     name: string;
+    ownerName: string;
+    sallonType: string;
     appId?: string;
     fcmToken?: string;
     role: USER_ROLES;
