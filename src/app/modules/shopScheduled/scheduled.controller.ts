@@ -30,7 +30,22 @@ const createOrUpdateShopSchedule = async (req: Request, res: Response): Promise<
     }
 };
 
+//barber id to get shop schedule
+const getShopScheduleByBarberId = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const barberId = req.params.barberId as string;
+        const shopSchedule = await ShopScheduledService.getShopScheduleByBarberId(barberId);
+        res.status(200).json(shopSchedule);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+
 export const ShopScheduledController = {
     getShopSchedule,
-    createOrUpdateShopSchedule
+    createOrUpdateShopSchedule,
+    getShopScheduleByBarberId,
+
 };

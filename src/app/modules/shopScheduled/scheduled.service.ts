@@ -38,8 +38,23 @@ const createOrUpdateShopSchedule = async (schedule: ShopScheduleInterface): Prom
         throw new Error('Error creating or updating shop schedule');
     }
 };
+//barber id to get shop schedule
+const getShopScheduleByBarberId = async (barberId: string): Promise<ShopScheduleInterface | {}> => {
+    try {
+        const shopSchedule = await ShopSchedule.findOne().lean();
+        if (!shopSchedule) {
+            return [];
+        }
+        return shopSchedule as ShopScheduleInterface;
+    }
+    catch (error) {
+        throw new Error('Error retrieving shop schedule');
+    }
+}
+
 
 export const ShopScheduledService = {
     getShopSchedule,
     createOrUpdateShopSchedule,
+    getShopScheduleByBarberId
 };

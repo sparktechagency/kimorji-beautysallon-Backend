@@ -47,7 +47,7 @@ router.get('/:id',
 );
 
 router.get(
-    '/:userId/category/:categoryId',
+    '/:userId/category',
     auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER)
     , BarberController.getUserCategoryWithServices
 );

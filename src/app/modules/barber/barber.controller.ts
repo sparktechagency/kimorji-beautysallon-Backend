@@ -107,15 +107,13 @@ const barberDetails = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getUserCategoryWithServices = catchAsync(async (req: Request, res: Response) => {
-    const { userId, categoryId } = req.params;
+    const { userId } = req.params;
 
-    console.log("=== Get User Category with Services ===");
-    console.log("User ID:", userId);
-    console.log("Category ID:", categoryId);
+    const { serviceType } = req.query;
 
     const result = await BarberService.getUserCategoryWithServicesFromDB(
         userId,
-        categoryId
+        serviceType as string
     );
 
     sendResponse(res, {

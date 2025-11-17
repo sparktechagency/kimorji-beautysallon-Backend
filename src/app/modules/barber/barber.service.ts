@@ -618,57 +618,46 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
 }
 
 
-const getUserCategoryWithServicesFromDB = async (
-    userId: string,
-    categoryId: string
-): Promise<{}> => {
-    console.log("🔍 User ID:", userId, "Category ID:", categoryId);
+const getUserCategoryWithServicesFromDB = async (userId: string, serviceTypeFilter: string = ''): Promise<{}> => {
+    console.log("🔍 User ID:", userId);
 
-    // Validate user exists
-    const user = await User.findById(userId).select("name email profile");
-    if (!user) {
-        throw new Error("User not found");
-    }
+    // // Validate user exists
+    // const user = await User.findById(userId).select("name email profile");
+    // if (!user) {
+    //     throw new Error("User not found");
+    // }
 
-    // Validate category exists
-    const category = await Category.findById(categoryId).select("name image").lean();
-    if (!category) {
-        throw new Error("Category not found");
-    }
-
-    console.log("✅ Category found:", category);
-
-    // Get all services created by this user for this category
-    const services = await Service.find({
-        barber: userId,
-        category: categoryId,
-        status: "Active"
-    })
+    const servicesQuery = Service.find({ barber: userId, status: "Active" })
         .populate({
             path: "title",
-            select: "title"
+            select: "title category",
+            populate: {
+                path: "category",
+                select: "name image"
+            }
         })
         .select("title price duration description image gender rating totalRating isOffered transportFee serviceType")
         .lean();
 
-    console.log(`🛠️ Found ${services.length} services for this user and category`);
+    if (serviceTypeFilter) {
+        servicesQuery.where({ serviceType: serviceTypeFilter });
+    }
+
+    const services = await servicesQuery;
+
+    console.log(`🛠️ Found ${services.length} services for this user`);
 
     if (services.length === 0) {
-        // No services found - check if any services exist for this user
-        const allUserServices = await Service.find({ barber: userId }).limit(3).lean();
-        console.log("⚠️ No services found for this category. Sample user services:", allUserServices);
+        console.log("⚠️ No services found for this user.");
 
         return {
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                profile: user.profile
-            },
+            // user: {
+            //     _id: user._id,
+            //     name: user.name,
+            //     email: user.email,
+            //     profile: user.profile
+            // },
             category: {
-                _id: category._id,
-                name: category.name,
-                image: category.image,
                 totalSubcategories: 0,
                 totalServices: 0,
                 subcategories: []
@@ -687,11 +676,17 @@ const getUserCategoryWithServicesFromDB = async (
 
         const subcategoryId = service.title._id.toString();
         const subcategoryTitle = service.title.title;
+        const category = service.title.category;
 
         if (!subcategoriesMap.has(subcategoryId)) {
             subcategoriesMap.set(subcategoryId, {
                 _id: subcategoryId,
                 title: subcategoryTitle,
+                categoryInfo: {
+                    _id: category?._id,
+                    name: category?.name || 'Unknown Category',
+                    image: category?.image || 'No Image'
+                },
                 servicesCount: 0,
                 services: []
             });
@@ -719,17 +714,15 @@ const getUserCategoryWithServicesFromDB = async (
 
     console.log(`✅ Organized into ${subcategoriesArray.length} subcategories`);
 
+    // Return result
     const result = {
-        user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            profile: user.profile
-        },
+        // user: {
+        //     _id: user._id,
+        //     name: user.name,
+        //     email: user.email,
+        //     profile: user.profile
+        // },
         category: {
-            _id: category._id,
-            name: category.name,
-            image: category.image,
             totalSubcategories: subcategoriesArray.length,
             totalServices: services.length,
             subcategories: subcategoriesArray
@@ -738,6 +731,7 @@ const getUserCategoryWithServicesFromDB = async (
 
     return result;
 };
+
 
 /**
  * Using aggregation for better performance
