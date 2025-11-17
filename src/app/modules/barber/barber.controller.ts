@@ -8,37 +8,20 @@ import { Secret } from "jsonwebtoken";
 import config from "../../../config";
 
 const getBarberProfile = catchAsync(async (req: Request, res: Response) => {
-    const barberId = req.params.id;
-    const customerId = req.user?.id;
-    console.log("=== Get Barber Profile ===");
-    console.log("Customer ID:", customerId);
-    console.log("Barber ID:", barberId);
-
-    const result = await BarberService.barberDetailsFromDB(barberId, customerId);
+    const token = req.body.token;
+    let user: any;
+    if (token) {
+        user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
+    }
+    const result = await BarberService.getBarberProfileFromDB(user, req.params.id, req.query);
 
     sendResponse(res, {
-        statusCode: 200,
+        statusCode: StatusCodes.OK,
         success: true,
         message: "Barber profile found",
         data: result
     });
 });
-
-// const getBarberProfile = catchAsync(async (req: Request, res: Response) => {
-//     const token = req.body.token;
-//     let user: any;
-//     if (token) {
-//         user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
-//     }
-//     const result = await BarberService.getBarberProfileFromDB(user, req.params.id, req.query);
-
-//     sendResponse(res, {
-//         statusCode: StatusCodes.OK,
-//         success: true,
-//         message: "Barber profile found",
-//         data: result
-//     });
-// });
 
 const getCustomerProfile = catchAsync(async (req: Request, res: Response) => {
     const result = await BarberService.getCustomerProfileFromDB(req.params.id);
@@ -123,6 +106,47 @@ const barberDetails = catchAsync(async (req: Request, res: Response) => {
     })
 });
 
+const getUserCategoryWithServices = catchAsync(async (req: Request, res: Response) => {
+    const { userId, categoryId } = req.params;
+
+    console.log("=== Get User Category with Services ===");
+    console.log("User ID:", userId);
+    console.log("Category ID:", categoryId);
+
+    const result = await BarberService.getUserCategoryWithServicesFromDB(
+        userId,
+        categoryId
+    );
+
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "User category with services retrieved successfully",
+        data: result
+    });
+});
+
+
+const getUserCategoryWithServicesAggregated = catchAsync(async (req: Request, res: Response) => {
+    const { userId, categoryId } = req.params;
+
+    console.log("=== Get User Category with Services (Aggregated) ===");
+    console.log("User ID:", userId);
+    console.log("Category ID:", categoryId);
+
+    const result = await BarberService.getUserCategoryWithServicesUsingAggregation(
+        userId,
+        categoryId
+    );
+
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "User category with services retrieved successfully",
+        data: result
+    });
+});
+
 
 export const BarberController = {
     getBarberProfile,
@@ -131,5 +155,7 @@ export const BarberController = {
     specialOfferBarber,
     recommendedBarber,
     getBarberList,
-    barberDetails
+    barberDetails,
+    getUserCategoryWithServices,
+    getUserCategoryWithServicesAggregated
 }

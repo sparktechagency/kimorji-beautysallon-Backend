@@ -15,22 +15,103 @@ import getRatingForBarber from "../../../shared/getRatingForBarber";
 import { Category } from "../category/category.model";
 import { SubCategory } from "../subCategory/subCategory.model";
 
-const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
+// const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
 
+//     const { coordinates } = query;
+
+//     if (!coordinates) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID")
+//     }
+
+//     const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
+//         User.findById(id).select("name email profile about address contact location gender dateOfBirth").lean(),
+//         Portfolio.find({ barber: id }).select("image"),
+//         Review.find({ barber: id }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating service"),
+//         Review.aggregate([
+//             {
+//                 $match: { barber: id }
+//             },
+//             {
+//                 $group: {
+//                     _id: null,
+//                     totalRatingCount: { $sum: 1 },
+//                     totalRating: { $sum: "$rating" }
+//                 }
+//             },
+//             {
+//                 $project: {
+//                     _id: 0,
+//                     totalRatingCount: 1,
+//                     averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
+//                 }
+//             },
+//             //service include rating
+//             {
+//                 $lookup: {
+//                     from: "services",
+//                     localField: "service",
+//                     foreignField: "_id",
+//                     as: "service"
+//                 }
+//             },
+
+//         ]),
+//         Service.find({ barber: id }).populate("title", "title").select("title duration category price image"),
+
+//     ]);
+
+//     if (!barber) {
+//         throw new Error("Barber not found");
+//     }
+
+//     const distance = await getDistanceFromCoordinates(barber?.location?.coordinates, JSON?.parse(coordinates));
+//     const isBookmarked = await Bookmark.findOne({ customer: user?.id, barber: id });
+
+//     const result = {
+//         ...barber,
+//         distance: distance ? distance : {},
+//         rating: {
+//             totalRatingCount: rating[0]?.totalRatingCount || 0,
+//             averageRating: rating[0]?.averageRating || 0
+//         },
+//         isBookmarked: !!isBookmarked,
+//         satisfiedClients: rating[0]?.totalRatingCount || 0,
+//         portfolios,
+//         reviews,
+//         services
+//     }
+
+//     return result;
+// }
+const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
     const { coordinates } = query;
 
     if (!coordinates) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates");
     }
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID")
+        throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID");
     }
 
     const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
         User.findById(id).select("name email profile about address contact location gender dateOfBirth").lean(),
         Portfolio.find({ barber: id }).select("image"),
-        Review.find({ barber: id }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating"),
+        Review.find({ barber: id })
+            .populate({ path: "customer", select: "name" })
+            .populate({
+                path: "service",
+                select: "title price category duration image",
+                populate: {
+                    path: "title",
+                    select: "title"
+                }
+            })
+            .select("barber comment createdAt rating service"),
         Review.aggregate([
             {
                 $match: { barber: id }
@@ -48,7 +129,15 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
                     totalRatingCount: 1,
                     averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
                 }
-            }
+            },
+            {
+                $lookup: {
+                    from: "services",
+                    localField: "service",
+                    foreignField: "_id",
+                    as: "service"
+                }
+            },
         ]),
         Service.find({ barber: id }).populate("title", "title").select("title duration category price image")
     ]);
@@ -70,12 +159,18 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
         isBookmarked: !!isBookmarked,
         satisfiedClients: rating[0]?.totalRatingCount || 0,
         portfolios,
-        reviews,
-        services
+        reviews: reviews.map((review: any) => ({
+            ...review.toObject(),
+            serviceName: review.service?.title?.title || 'Unknown Service',
+            image: review.service?.image || 'N/A',
+            price: review.service?.price || 'N/A',
+            duration: review.service?.duration || 'N/A',
+
+        })),
     }
 
     return result;
-}
+};
 
 const getCustomerProfileFromDB = async (customer: string): Promise<{}> => {
 
@@ -523,6 +618,234 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
 }
 
 
+const getUserCategoryWithServicesFromDB = async (
+    userId: string,
+    categoryId: string
+): Promise<{}> => {
+    console.log("🔍 User ID:", userId, "Category ID:", categoryId);
+
+    // Validate user exists
+    const user = await User.findById(userId).select("name email profile");
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    // Validate category exists
+    const category = await Category.findById(categoryId).select("name image").lean();
+    if (!category) {
+        throw new Error("Category not found");
+    }
+
+    console.log("✅ Category found:", category);
+
+    // Get all services created by this user for this category
+    const services = await Service.find({
+        barber: userId,
+        category: categoryId,
+        status: "Active"
+    })
+        .populate({
+            path: "title",
+            select: "title"
+        })
+        .select("title price duration description image gender rating totalRating isOffered transportFee serviceType")
+        .lean();
+
+    console.log(`🛠️ Found ${services.length} services for this user and category`);
+
+    if (services.length === 0) {
+        // No services found - check if any services exist for this user
+        const allUserServices = await Service.find({ barber: userId }).limit(3).lean();
+        console.log("⚠️ No services found for this category. Sample user services:", allUserServices);
+
+        return {
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                profile: user.profile
+            },
+            category: {
+                _id: category._id,
+                name: category.name,
+                image: category.image,
+                totalSubcategories: 0,
+                totalServices: 0,
+                subcategories: []
+            }
+        };
+    }
+
+    // Group services by subcategory
+    const subcategoriesMap = new Map();
+
+    services.forEach((service: any) => {
+        if (!service.title) {
+            console.log("⚠️ Service without title:", service._id);
+            return;
+        }
+
+        const subcategoryId = service.title._id.toString();
+        const subcategoryTitle = service.title.title;
+
+        if (!subcategoriesMap.has(subcategoryId)) {
+            subcategoriesMap.set(subcategoryId, {
+                _id: subcategoryId,
+                title: subcategoryTitle,
+                servicesCount: 0,
+                services: []
+            });
+        }
+
+        const subcategory = subcategoriesMap.get(subcategoryId);
+        subcategory.servicesCount++;
+        subcategory.services.push({
+            _id: service._id,
+            serviceName: subcategoryTitle,
+            price: service.price,
+            duration: service.duration,
+            description: service.description,
+            image: service.image,
+            gender: service.gender,
+            rating: service.rating,
+            totalRating: service.totalRating,
+            isOffered: service.isOffered,
+            transportFee: service.transportFee,
+            serviceType: service.serviceType
+        });
+    });
+
+    const subcategoriesArray = Array.from(subcategoriesMap.values());
+
+    console.log(`✅ Organized into ${subcategoriesArray.length} subcategories`);
+
+    const result = {
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            profile: user.profile
+        },
+        category: {
+            _id: category._id,
+            name: category.name,
+            image: category.image,
+            totalSubcategories: subcategoriesArray.length,
+            totalServices: services.length,
+            subcategories: subcategoriesArray
+        }
+    };
+
+    return result;
+};
+
+/**
+ * Using aggregation for better performance
+ */
+const getUserCategoryWithServicesUsingAggregation = async (
+    userId: string,
+    categoryId: string
+): Promise<{}> => {
+    // Validate inputs
+    const [user, category] = await Promise.all([
+        User.findById(userId).select("name email profile").lean(),
+        Category.findById(categoryId).select("name image").lean()
+    ]);
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    if (!category) {
+        throw new Error("Category not found");
+    }
+
+    console.log("🔍 Running aggregation for user:", userId, "category:", categoryId);
+
+    // Aggregation: Get services grouped by subcategory
+    const result = await Service.aggregate([
+        // Match services for this user and category
+        {
+            $match: {
+                barber: new mongoose.Types.ObjectId(userId),
+                category: new mongoose.Types.ObjectId(categoryId),
+                status: "Active"
+            }
+        },
+        // Lookup subcategory details
+        {
+            $lookup: {
+                from: "subcategories",
+                localField: "title",
+                foreignField: "_id",
+                as: "subcategoryInfo"
+            }
+        },
+        // Unwind subcategory
+        {
+            $unwind: {
+                path: "$subcategoryInfo",
+                preserveNullAndEmptyArrays: false
+            }
+        },
+        // Group by subcategory
+        {
+            $group: {
+                _id: "$subcategoryInfo._id",
+                title: { $first: "$subcategoryInfo.title" },
+                services: {
+                    $push: {
+                        _id: "$_id",
+                        serviceName: "$subcategoryInfo.title",
+                        price: "$price",
+                        duration: "$duration",
+                        description: "$description",
+                        image: "$image",
+                        gender: "$gender",
+                        rating: "$rating",
+                        totalRating: "$totalRating",
+                        isOffered: "$isOffered",
+                        transportFee: "$transportFee",
+                        serviceType: "$serviceType"
+                    }
+                }
+            }
+        },
+        // Add services count
+        {
+            $addFields: {
+                servicesCount: { $size: "$services" }
+            }
+        },
+        // Sort by title
+        {
+            $sort: { title: 1 }
+        }
+    ]);
+
+    console.log(`✅ Aggregation found ${result.length} subcategories`);
+
+    const totalServices = result.reduce((sum, sub) => sum + sub.servicesCount, 0);
+
+    return {
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            profile: user.profile
+        },
+        category: {
+            _id: category._id,
+            name: category.name,
+            image: category.image,
+            totalSubcategories: result.length,
+            totalServices: totalServices,
+            subcategories: result
+        }
+    };
+};
+
+
 export const BarberService = {
     getBarberProfileFromDB,
     getCustomerProfileFromDB,
@@ -531,5 +854,7 @@ export const BarberService = {
     recommendedBarberFromDB,
     getBarberListFromDB,
     barberDetailsFromDB,
-    barberDetailsFromDB2
+    barberDetailsFromDB2,
+    getUserCategoryWithServicesFromDB,
+    getUserCategoryWithServicesUsingAggregation
 }
