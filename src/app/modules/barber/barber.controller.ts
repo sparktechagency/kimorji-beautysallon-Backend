@@ -94,7 +94,6 @@ const getBarberList = catchAsync(async (req: Request, res: Response) => {
     })
 });
 
-
 const barberDetails = catchAsync(async (req: Request, res: Response) => {
     const result = await BarberService.barberDetailsFromDB2(req.user);
 
@@ -155,5 +154,5 @@ export const BarberController = {
     getBarberList,
     barberDetails,
     getUserCategoryWithServices,
-    getUserCategoryWithServicesAggregated
+
 }

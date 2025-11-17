@@ -41,7 +41,7 @@ const createOrUpdateShopSchedule = async (schedule: ShopScheduleInterface): Prom
 //barber id to get shop schedule
 const getShopScheduleByBarberId = async (barberId: string): Promise<ShopScheduleInterface | {}> => {
     try {
-        const shopSchedule = await ShopSchedule.findOne().lean();
+        const shopSchedule = await ShopSchedule.findOne().lean(); `  11`
         if (!shopSchedule) {
             return [];
         }

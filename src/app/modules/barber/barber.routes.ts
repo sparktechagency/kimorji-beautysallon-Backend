@@ -52,9 +52,9 @@ router.get(
     , BarberController.getUserCategoryWithServices
 );
 
-router.get(
-    '/:userId/category/:categoryId/aggregated',
-    auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
-    BarberController.getUserCategoryWithServicesAggregated
-);
+// router.get(
+//     '/:userId/category/:categoryId/aggregated',
+//     auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
+//     BarberController.getUserCategoryWithServicesAggregated
+// );
 export const BarberRoutes = router;

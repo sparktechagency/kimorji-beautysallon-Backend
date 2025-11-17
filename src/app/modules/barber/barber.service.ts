@@ -14,23 +14,45 @@ import { Bookmark } from "../bookmark/bookmark.model";
 import getRatingForBarber from "../../../shared/getRatingForBarber";
 import { Category } from "../category/category.model";
 import { SubCategory } from "../subCategory/subCategory.model";
+import { redis } from "../redis/client";
+import { logger } from "../../../shared/logger";
 
 // const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
-
 //     const { coordinates } = query;
+//     const cacheKey = `services:${coordinates}}`
 
+//     try {
+//         const cached = await redis.get(cacheKey)
+//         if (cached) {
+//             logger.info(`Cache hit for key ${cacheKey}`)
+//             return JSON.parse(cached)
+//         }
+//     } catch (e) {
+//         logger.warn(`Redis get failed: ${e}`)
+//     }
 //     if (!coordinates) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates");
 //     }
 
 //     if (!mongoose.Types.ObjectId.isValid(id)) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID")
+//         throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID");
 //     }
 
 //     const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
-//         User.findById(id).select("name email profile about address contact location gender dateOfBirth").lean(),
+
+//         User.findById(id).select("name email profile about address contact location gender sallonType  dateOfBirth").lean(),
 //         Portfolio.find({ barber: id }).select("image"),
-//         Review.find({ barber: id }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating service"),
+//         Review.find({ barber: id })
+//             .populate({ path: "customer", select: "name" })
+//             .populate({
+//                 path: "service",
+//                 select: "title price category duration image",
+//                 populate: {
+//                     path: "title",
+//                     select: "title"
+//                 }
+//             })
+//             .select("barber comment createdAt rating service"),
 //         Review.aggregate([
 //             {
 //                 $match: { barber: id }
@@ -49,7 +71,6 @@ import { SubCategory } from "../subCategory/subCategory.model";
 //                     averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
 //                 }
 //             },
-//             //service include rating
 //             {
 //                 $lookup: {
 //                     from: "services",
@@ -58,9 +79,8 @@ import { SubCategory } from "../subCategory/subCategory.model";
 //                     as: "service"
 //                 }
 //             },
-
 //         ]),
-//         Service.find({ barber: id }).populate("title", "title").select("title duration category price image"),
+//         Service.find({ barber: id }).populate("title", "title").select("title duration category price image")
 
 //     ]);
 
@@ -81,14 +101,34 @@ import { SubCategory } from "../subCategory/subCategory.model";
 //         isBookmarked: !!isBookmarked,
 //         satisfiedClients: rating[0]?.totalRatingCount || 0,
 //         portfolios,
-//         reviews,
-//         services
+//         reviews: reviews.map((review: any) => ({
+//             ...review.toObject(),
+//             serviceName: review.service?.title?.title || 'Unknown Service',
+//             image: review.service?.image || 'N/A',
+//             price: review.service?.price || 'N/A',
+//             duration: review.service?.duration || 'N/A',
+//             // cacheKey: result
+
+//         })),
 //     }
 
 //     return result;
-// }
+// };
 const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
     const { coordinates } = query;
+
+    // Generate a unique cache key based on user and coordinates
+    const cacheKey = `barberProfile:${id}:${coordinates}`;
+
+    try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            logger.info(`Cache hit for key ${cacheKey}`);
+            return JSON.parse(cached);
+        }
+    } catch (e) {
+        logger.warn(`Redis get failed: ${e}`);
+    }
 
     if (!coordinates) {
         throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates");
@@ -99,8 +139,10 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
     }
 
     const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
-        User.findById(id).select("name email profile about address contact location gender dateOfBirth").lean(),
+        User.findById(id).select("name email profile about address contact location gender sallonType dateOfBirth").lean(),
+
         Portfolio.find({ barber: id }).select("image"),
+
         Review.find({ barber: id })
             .populate({ path: "customer", select: "name" })
             .populate({
@@ -112,33 +154,13 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
                 }
             })
             .select("barber comment createdAt rating service"),
+
         Review.aggregate([
-            {
-                $match: { barber: id }
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalRatingCount: { $sum: 1 },
-                    totalRating: { $sum: "$rating" }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    totalRatingCount: 1,
-                    averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
-                }
-            },
-            {
-                $lookup: {
-                    from: "services",
-                    localField: "service",
-                    foreignField: "_id",
-                    as: "service"
-                }
-            },
+            { $match: { barber: id } },
+            { $group: { _id: null, totalRatingCount: { $sum: 1 }, totalRating: { $sum: "$rating" } } },
+            { $project: { _id: 0, totalRatingCount: 1, averageRating: { $divide: ["$totalRating", "$totalRatingCount"] } } }
         ]),
+
         Service.find({ barber: id }).populate("title", "title").select("title duration category price image")
     ]);
 
@@ -147,6 +169,7 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
     }
 
     const distance = await getDistanceFromCoordinates(barber?.location?.coordinates, JSON?.parse(coordinates));
+
     const isBookmarked = await Bookmark.findOne({ customer: user?.id, barber: id });
 
     const result = {
@@ -164,9 +187,15 @@ const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Recor
             serviceName: review.service?.title?.title || 'Unknown Service',
             image: review.service?.image || 'N/A',
             price: review.service?.price || 'N/A',
-            duration: review.service?.duration || 'N/A',
+            duration: review.service?.duration || 'N/A'
+        }))
+    };
 
-        })),
+    // Cache the result in Redis with an expiration time (e.g., 10 minutes)
+    try {
+        await redis.setEx(cacheKey, 600, JSON.stringify(result)); // Set TTL to 600 seconds (10 minutes)
+    } catch (e) {
+        logger.warn(`Redis set failed: ${e}`);
     }
 
     return result;
