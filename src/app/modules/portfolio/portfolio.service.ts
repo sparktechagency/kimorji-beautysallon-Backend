@@ -6,6 +6,7 @@ import { Portfolio } from './portfolio.model';
 
 
 const createPortfolioToDB = async (payload: IPortfolio): Promise<IPortfolio[]> => {
+  //barber id add from token
   const portfolios = await Portfolio.insertMany(payload);
   if (!portfolios) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to created Faq');

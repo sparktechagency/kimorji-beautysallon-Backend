@@ -501,7 +501,7 @@ const customerReservationFromDB = async (user: JwtPayload, query: Record<string,
     .populate([
       {
         path: 'barber',
-        select: "name location profile discount"
+        select: "name location profile address contact "
       },
       {
         path: 'service',

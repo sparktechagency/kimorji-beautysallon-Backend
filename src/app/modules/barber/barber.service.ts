@@ -395,11 +395,18 @@ const barberDetailsFromDB2 = async (user: JwtPayload): Promise<{}> => {
     const [barber, portfolios, reviews, rating]: any = await Promise.all([
         User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth").lean(),
         Portfolio.find({ barber: user?.id }).select("image"),
-        Review.find({ barber: user?.id }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating"),
+        Review.find({ barber: user?.id }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating "),
         Review.aggregate([
             {
-                $match: { barber: user?.id }
+                $match: {
+                    barber: user?.id,
+                    service: {
+                        $exists: true
+                    }
+                }
             },
+
+
             {
                 $group: {
                     _id: null,
@@ -439,9 +446,26 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
     console.log("Service - Customer ID:", customerId, "Barber ID:", barberId); // Debug
 
     const [barber, portfolios, reviews, rating, bookmark]: any = await Promise.all([
-        User.findById(barberId).select("name email profile accountInformation about address contact gender dateOfBirth").lean(),
+        User.findById(barberId)
+            .select("name email profile accountInformation about address contact gender dateOfBirth")
+            .lean(),
         Portfolio.find({ barber: barberId }).select("image"),
-        Review.find({ barber: barberId }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating"),
+        Review.find({ barber: barberId })
+            .populate({
+                path: "customer",
+                select: "name profile"
+            })
+            .populate({
+                path: "service",
+                select: "title",
+                populate: {
+                    path: "title",
+                    model: "SubCategory",
+                    select: "title"
+                }
+            })
+            .select("barber comment createdAt rating service customer")
+            .lean(),
         Review.aggregate([
             {
                 $match: { barber: new mongoose.Types.ObjectId(barberId) }
@@ -468,6 +492,7 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
     ]);
 
     console.log("Bookmark result:", bookmark); // Debug
+    console.log("First review with service:", JSON.stringify(reviews[0], null, 2)); // Debug
 
     if (!barber) {
         throw new Error("Barber not found");
@@ -481,13 +506,21 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
         },
         satisfiedClients: rating[0]?.totalRatingCount || 0,
         portfolios,
-        reviews,
+        reviews: reviews.map((review: any) => ({
+            _id: review._id,
+            customer: review.customer,
+            barber: review.barber,
+            comment: review.comment,
+            rating: review.rating,
+            createdAt: review.createdAt,
+            service: review.service?._id,
+            serviceName: review.service?.title?.title || 'Unknown Service'
+        })),
         isBookmarked: !!bookmark
     }
 
     return result;
 }
-
 
 
 export const BarberService = {
