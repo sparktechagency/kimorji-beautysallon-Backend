@@ -22,6 +22,7 @@ export type IUser = {
     sallonType: string;
     appId?: string;
     fcmToken?: string;
+    establishedYear?: string;
     role: USER_ROLES;
     mobileNumber?: string;
     email?: string;

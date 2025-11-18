@@ -114,13 +114,26 @@ import { logger } from "../../../shared/logger";
 
 //     return result;
 // };
+async function checkRedisConnection() {
+    if (!redis.isOpen) {
+        try {
+            await redis.connect(); // Connect to Redis if not already connected
+            console.log('[Redis] Connected successfully');
+        } catch (error) {
+            console.error('[Redis] Failed to connect:', error
+            );
+            throw new Error('[Redis] Failed to connect');
+        }
+    }
+}
+
 const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
     const { coordinates } = query;
-
-    // Generate a unique cache key based on user and coordinates
     const cacheKey = `barberProfile:${id}:${coordinates}`;
 
     try {
+        await checkRedisConnection();
+
         const cached = await redis.get(cacheKey);
         if (cached) {
             logger.info(`Cache hit for key ${cacheKey}`);
@@ -650,11 +663,6 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
 const getUserCategoryWithServicesFromDB = async (userId: string, serviceTypeFilter: string = ''): Promise<{}> => {
     console.log("🔍 User ID:", userId);
 
-    // // Validate user exists
-    // const user = await User.findById(userId).select("name email profile");
-    // if (!user) {
-    //     throw new Error("User not found");
-    // }
 
     const servicesQuery = Service.find({ barber: userId, status: "Active" })
         .populate({
