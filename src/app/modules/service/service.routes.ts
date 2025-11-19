@@ -12,12 +12,12 @@ import { RecommendedController } from '../recommended/recommended.controller';
 const router = express.Router();
 
 router.post('/',
-    auth(USER_ROLES.BARBER),
+    auth(USER_ROLES.BARBER,USER_ROLES.ADMIN),
     ServiceController.createService
 );
 router.get(
     '/barber',
-    auth(USER_ROLES.BARBER),
+    auth(USER_ROLES.BARBER, USER_ROLES.ADMIN),
     ServiceController.getAllServicesbarber
 );
 router.get(

@@ -1,4 +1,4 @@
-import { TimeSlot } from './../../../helpers/timeslot.helper';
+import { TimeSlot, to24Hour } from './../../../helpers/timeslot.helper';
 import { JwtPayload } from "jsonwebtoken";
 import { IReservation } from "./reservation.interface";
 import { Reservation } from "./reservation.model";
@@ -18,7 +18,8 @@ import { logger } from "../../../shared/logger";
 import { enqueueNotification } from "../queue/notification.queue";
 import { Day } from "../../../enums/day";
 import { resetSlotAndUpdateStatus } from '../../../helpers/reset.time.slot';
-
+import httpStatus from "http-status";
+import ShopSchedule from '../shopScheduled/scheduled.model';
 // const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
 //   const service = await Service.findById(payload.service);
 //   if (!service) {
@@ -51,11 +52,13 @@ import { resetSlotAndUpdateStatus } from '../../../helpers/reset.time.slot';
 //     throw new Error("This time slot is already booked for the selected date");
 //   }
 
+//   // Create reservation
 //   const reservation = await Reservation.create(payload);
 //   if (!reservation) {
 //     throw new Error("Failed to create reservation");
 //   }
 
+//   // Update the bookedSlots array for the service
 //   await Service.findByIdAndUpdate(payload.service as Types.ObjectId, {
 //     $push: {
 //       bookedSlots: {
@@ -67,6 +70,7 @@ import { resetSlotAndUpdateStatus } from '../../../helpers/reset.time.slot';
 //     }
 //   });
 
+//   // Send notification to the barber
 //   const data = {
 //     text: "You receive a new reservation request",
 //     receiver: payload.barber,
@@ -76,89 +80,206 @@ import { resetSlotAndUpdateStatus } from '../../../helpers/reset.time.slot';
 //   enqueueNotification;
 //   sendNotifications(data);
 
-
-//   // setTimeout(async () => {
-//   //   const updatedReservation = await Reservation.findById(reservation._id.toString());
-
-//   //   if (updatedReservation && updatedReservation.status === "Canceled") {
-//   //     // Reset the time slot
-//   //     await resetSlotAndUpdateStatus(payload.service as unknown as mongoose.Schema.Types.ObjectId, payload.reservationDate, payload.timeSlot);
-
-//   //     // Update the reservation status
-//   //     await Reservation.findByIdAndUpdate(reservation._id, {
-//   //       status: "Completed",
-//   //     });
-
-//   //     console.log(`Reservation ${reservation._id} has been canceled and slot reset.`);
-//   //   }
-
-//   // }, 1 * 60 * 1000); // 1 minute in milliseconds
-
 //   return reservation;
 // };
+
 const createReservationToDB = async (payload: IReservation): Promise<IReservation> => {
+  // Find service
   const service = await Service.findById(payload.service);
   if (!service) {
-    throw new Error("Service not found");
+    throw new ApiError(httpStatus.NOT_FOUND, "Service not found");
   }
+  
+  const barberId = service.barber;
 
-  const dayOfWeek = new Date(payload.reservationDate).toLocaleDateString("en-US", { weekday: "long" });
+  const reservationDate = new Date(payload.reservationDate);
+  const dateString = reservationDate.toISOString().split('T')[0]; 
+  const dayOfWeek = reservationDate.toLocaleDateString("en-US", { weekday: "long" });
   const dayOfWeekUpper = dayOfWeek.toUpperCase();
 
-  const dailySchedule = service.dailySchedule.find(
-    (schedule) => schedule.day === dayOfWeekUpper || schedule.day === dayOfWeek
+  let normalizedTimeSlot = payload.timeSlot;
+  try {
+    if (payload.timeSlot.includes('AM') || payload.timeSlot.includes('PM') || 
+        payload.timeSlot.includes('am') || payload.timeSlot.includes('pm')) {
+      normalizedTimeSlot = to24Hour(payload.timeSlot);
+    }
+  } catch (error) {
+    // If conversion fails, use as is
+    console.log('Time slot conversion skipped:', payload.timeSlot);
+  }
+
+  console.log('Reservation Details:', {
+    dateString,
+    dayOfWeek,
+    dayOfWeekUpper,
+    originalTimeSlot: payload.timeSlot,
+    normalizedTimeSlot
+  });
+
+  // 1. Check if service has schedule for this day
+  const dailySchedule = service.dailySchedule?.find(
+    (schedule) => {
+      const scheduleDay = schedule.day.toUpperCase();
+      return scheduleDay === dayOfWeekUpper || scheduleDay === dayOfWeek.toUpperCase();
+    }
   );
 
-  if (!dailySchedule) {
-    throw new Error(`No schedule available for ${dayOfWeek}`);
+  if (!dailySchedule || !dailySchedule.timeSlot || dailySchedule.timeSlot.length === 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `No schedule available for ${dayOfWeek}`
+    );
   }
 
-  const isValidTimeSlot = dailySchedule.timeSlot.includes(payload.timeSlot);
+  // 2. Check if time slot exists in service's regular schedule
+  // Compare both original and normalized formats
+  const isValidTimeSlot = dailySchedule.timeSlot.some(slot => {
+    return slot === payload.timeSlot || 
+           slot === normalizedTimeSlot ||
+           slot.replace(/\s/g, '') === payload.timeSlot.replace(/\s/g, '');
+  });
+
   if (!isValidTimeSlot) {
-    throw new Error(`Time slot ${payload.timeSlot} is not available on ${dayOfWeek}`);
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Time slot ${payload.timeSlot} is not available on ${dayOfWeek}. Available slots: ${dailySchedule.timeSlot.join(', ')}`
+    );
   }
 
-  const isSlotBooked = service.bookedSlots.some(
-    (slot) =>
-      slot.date === payload.reservationDate &&
-      slot.timeSlot === payload.timeSlot
+  // 3. Check shop schedule
+  const shopSchedule = await ShopSchedule.findOne({ barber: barberId });
+  
+  console.log('Shop Schedule Found:', shopSchedule ? 'Yes' : 'No');
+
+  // 4. Check if permanent shop closure (shop closed every week on this day)
+  if (shopSchedule && shopSchedule.dailySchedule) {
+    const shopDaySchedule = shopSchedule.dailySchedule.find(
+      (s) => s.day.toUpperCase() === dayOfWeekUpper
+    );
+
+    console.log('Checking permanent closure:', {
+      day: dayOfWeekUpper,
+      shopDaySchedule,
+      isClosed: shopDaySchedule?.isClosed
+    });
+
+    if (shopDaySchedule?.isClosed) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Shop is permanently closed on ${dayOfWeek}s`
+      );
+    }
+  }
+
+  // 5. Check for temporary closures
+  if (shopSchedule && shopSchedule.temporaryClosures) {
+    console.log('Checking temporary closures for date:', dateString);
+    console.log('Available temporary closures:', shopSchedule.temporaryClosures);
+
+    const temporaryClosure = shopSchedule.temporaryClosures.find(
+      (closure) => {
+        console.log('Comparing dates:', {
+          closureDate: closure.date,
+          requestDate: dateString,
+          match: closure.date === dateString
+        });
+        return closure.date === dateString;
+      }
+    );
+
+    if (temporaryClosure) {
+      console.log('Temporary closure found:', temporaryClosure);
+
+      // Check if entire day is closed
+      if (temporaryClosure.timeSlots.length === 0) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Shop is closed on ${dateString}. Reason: ${temporaryClosure.reason || 'Temporary closure'}`
+        );
+      }
+
+      // Check if specific time slot is closed - compare in multiple formats
+      const isSlotClosed = temporaryClosure.timeSlots.some(closedSlot => {
+        // Normalize both slots for comparison
+        const normalizedClosedSlot = closedSlot.replace(/\s/g, '').toUpperCase();
+        const normalizedRequestSlot = payload.timeSlot.replace(/\s/g, '').toUpperCase();
+        
+        console.log('Comparing slots:', {
+          closedSlot,
+          requestSlot: payload.timeSlot,
+          normalizedClosedSlot,
+          normalizedRequestSlot,
+          match: normalizedClosedSlot === normalizedRequestSlot
+        });
+
+        return normalizedClosedSlot === normalizedRequestSlot ||
+               closedSlot === payload.timeSlot ||
+               closedSlot === normalizedTimeSlot;
+      });
+
+      if (isSlotClosed) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Time slot ${payload.timeSlot} is temporarily unavailable on ${dateString}. Reason: ${temporaryClosure.reason || 'Temporary closure'}`
+        );
+      }
+    } else {
+      console.log('No temporary closure found for this date');
+    }
+  }
+
+  // 6. Check if slot is already booked
+  const isSlotBooked = service.bookedSlots?.some(
+    (slot) => {
+      return slot.date === dateString && (
+        slot.timeSlot === payload.timeSlot || 
+        slot.timeSlot === normalizedTimeSlot
+      );
+    }
   );
 
   if (isSlotBooked) {
-    throw new Error("This time slot is already booked for the selected date");
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "This time slot is already booked for the selected date"
+    );
   }
 
-  // Create reservation
+  // 7. Create reservation
   const reservation = await Reservation.create(payload);
   if (!reservation) {
-    throw new Error("Failed to create reservation");
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create reservation");
   }
 
-  // Update the bookedSlots array for the service
+  // 8. Update the bookedSlots array for the service
   await Service.findByIdAndUpdate(payload.service as Types.ObjectId, {
     $push: {
       bookedSlots: {
-        date: payload.reservationDate,
+        date: dateString, // Use ISO date format
         timeSlot: payload.timeSlot,
-        day: payload.Day,
+        day: dayOfWeekUpper,
         reservationId: reservation._id
       }
     }
   });
-
-  // Send notification to the barber
-  const data = {
+  // 8. Send notification to the barber
+  const notificationData = {
     text: "You receive a new reservation request",
     receiver: payload.barber,
     referenceId: reservation._id,
     screen: "RESERVATION"
   };
-  enqueueNotification;
-  sendNotifications(data);
+
+  const queueData = {
+    type: 'push' as const,
+    message: notificationData.text
+  };
+
+  enqueueNotification(queueData);
+  sendNotifications(notificationData);
 
   return reservation;
 };
-
 
 // const updateReservationStatus = async (
 //   reservationId: string,

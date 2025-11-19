@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "app.ts",
   "scripts": {
-    "dev": "docker-compose up -d && ts-node-dev --respawn --transpile-only src/server.ts",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f redis"
+    "dev": "docker compose up -d && ts-node-dev --respawn --transpile-only src/server.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f redis"
   },
   "author": "Azizul",
   "license": "ISC",
@@ -40,6 +40,7 @@
     "firebase-admin": "^13.0.2",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
+    "http-status": "^2.1.0",
     "http-status-codes": "^2.3.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
