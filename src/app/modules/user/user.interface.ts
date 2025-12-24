@@ -35,6 +35,7 @@ export type IUser = {
     gender: "Male" | "Female" | "Children" | "Others";
     isDeleted: boolean;
     profile: string;
+    IsLocked: boolean;
     tradeLicences?: string[];
     proofOwnerId?: string[];
     sallonPhoto?: string[];

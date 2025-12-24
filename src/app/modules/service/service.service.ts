@@ -127,7 +127,15 @@ const redis = new Redis();
 //     throw error;
 //   }
 // };
-
+interface ServiceFilters {
+  searchTerm?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  category?: string;
+  title?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
 const createService = async (payload: Partial<IService>): Promise<IService> => {
   logger.info('Starting createService in service layer');
   logger.debug(`Service payload: ${JSON.stringify(payload)}`);
@@ -434,15 +442,8 @@ const createService = async (payload: Partial<IService>): Promise<IService> => {
 //     pagination: { page, limit, total, totalPage }
 //   };
 // };
-interface ServiceFilters {
-  searchTerm?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  category?: string;
-  title?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+
+
 
 const getAllServices = async (
   pagination: { page: number; totalPage: number; limit: number; total: number },
@@ -645,10 +646,13 @@ const getAllServices = async (
     }
   };
 };
+
+
 const getDayName = (date: Date): string => {
   const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   return days[date.getDay()];
 };
+
 
 const isTimeInSlot = (currentTime: string, slotTime: string): boolean => {
   if (slotTime.includes('-')) {
@@ -722,6 +726,7 @@ export const getAllServicesbarber = async ({
 
   return result
 }
+
 // Update a service
 const updateService = async (id: string, payload: Partial<IService>): Promise<IService | null> => {
   const service = await Service.findById(id);

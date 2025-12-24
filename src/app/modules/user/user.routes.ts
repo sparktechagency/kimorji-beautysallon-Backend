@@ -34,5 +34,10 @@ router
         fileUploadHandler(),
         UserController.updateProfile
     );
+router.patch(
+    '/toggle-lock',
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
+    UserController.toggleUserLock
+);
 
 export const UserRoutes = router;

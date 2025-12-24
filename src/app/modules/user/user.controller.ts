@@ -101,10 +101,29 @@ const updateLocation = catchAsync(async (req: Request, res: Response, next: Next
     });
 });
 
+const toggleUserLock = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const updatedUser = await UserService.toggleUserLock(id);
+
+        return res.status(StatusCodes.OK).json({
+            success: true,
+            message: `User ${updatedUser.IsLocked ? "locked" : "unlocked"} successfully`,
+            data: updatedUser
+        });
+    } catch (error: any) {
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: error.message || "Something went wrong"
+        });
+    }
+};
+
 export const UserController = {
     createUser,
     createAdmin,
     getUserProfile,
     updateProfile,
-    updateLocation
+    updateLocation,
+    toggleUserLock
 };

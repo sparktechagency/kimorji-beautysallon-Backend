@@ -103,6 +103,7 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
 
 //   return data;
 // };
+
 const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
   const { id } = user
   const isExistUser: any = await User.findById(id).lean()
@@ -147,6 +148,20 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
 
   return data
 }
+
+ const toggleUserLock = async (userId: string) => {
+    // Find user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    // Toggle isLocked
+    user.IsLocked = !user.IsLocked;
+    await user.save();
+
+    return user;
+};
 
 const updateProfileToDB = async (
   authUser: JwtPayload,
@@ -243,5 +258,6 @@ export const UserService = {
   getUserProfileFromDB,
   updateProfileToDB,
   createAdminToDB,
-  updateLocationToDB
+  updateLocationToDB,
+  toggleUserLock
 };

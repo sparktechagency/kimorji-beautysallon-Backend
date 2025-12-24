@@ -76,8 +76,6 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
       status: "success",
       message: result.message,
       userId: result.userId,
-      //   accessToken: result.accessToken,
-      //   refreshToken: result.refreshToken
     });
   } catch (error) {
     next(error);

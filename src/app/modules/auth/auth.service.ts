@@ -342,7 +342,6 @@ const verifyLoginOTPService = async (mobileNumber: string, otpCode: string) => {
     console.log('✅ User marked as verified');
   }
 
-  // Generate new tokens after successful OTP verification
   const accessToken = jwtHelper.createToken(
     { id: user._id, role: user.role },
     config.jwt.jwt_secret as Secret,

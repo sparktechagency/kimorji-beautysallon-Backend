@@ -2,9 +2,10 @@ import { INotification } from "../app/modules/notification/notification.interfac
 import { Notification } from "../app/modules/notification/notification.model";
 import { User } from "../app/modules/user/user.model";
 import { firebaseHelper } from "../shared/firebaseHelper";
+import e from 'express';
 
 
-export const sendNotifications = async (data: any): Promise<INotification> => {
+  export const sendNotifications = async (data: any): Promise<INotification> => {
 
     const result = await Notification.create(data);
 
