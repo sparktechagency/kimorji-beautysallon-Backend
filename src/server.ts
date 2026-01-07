@@ -35,7 +35,7 @@ export async function main() {
         // Seed super admin
         await seedSuperAdmin();
 
-        // Start cron jobs ONLY in the first worker
+        // Start cron jobs ONLY in the first workers
         if (cluster.worker && cluster.worker.id === 1) {
             startInAppCron();
             logger.info(colors.cyan('📅 Cron jobs started in worker 1'));
