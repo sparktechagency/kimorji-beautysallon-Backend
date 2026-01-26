@@ -29,6 +29,15 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
     },
+    licenseNumber: {
+      type: String,
+      required: false,
+    },
+    taxId: {
+      type: String,
+      required: false,
+    },
+    
     role: {
       type: String,
       enum: Object.values(USER_ROLES),

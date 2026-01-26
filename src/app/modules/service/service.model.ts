@@ -45,6 +45,7 @@ const serviceSchema = new Schema<IService, ServiceModel>(
     dailySchedule: { type: [scheduleItemSchema], required: false },
     price: { type: Number, required: false },
     duration: { type: String, required: false },
+    serviceName: { type: String, required: false },
     description: { type: String, required: false },
     gender: {
       type: String,

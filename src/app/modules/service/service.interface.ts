@@ -24,6 +24,7 @@ export type IService = {
   price: number;
   duration: string;
   description: string;
+  serviceName: string;
   gender: "Male" | "Female" | "Children" | "Others";
   isOffered: boolean;
   // parcent: number;

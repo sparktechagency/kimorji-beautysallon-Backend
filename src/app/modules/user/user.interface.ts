@@ -37,6 +37,8 @@ export type IUser = {
     profile: string;
     IsLocked: boolean;
     tradeLicences?: string[];
+    licenseNumber?: string;
+    taxId?: string;
     proofOwnerId?: string[];
     sallonPhoto?: string[];
     isUpdate: boolean;

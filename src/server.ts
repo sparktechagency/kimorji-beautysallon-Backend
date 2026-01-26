@@ -73,7 +73,7 @@ export async function main() {
         throw error;
     }
 }
-
+// 
 // Bootstrap function - runs on startup
 async function bootstrap() {
     try {
