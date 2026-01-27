@@ -1,5 +1,7 @@
 import { Model } from 'mongoose';
 import { USER_ROLES } from '../../../enums/user';
+import { Service } from '../service/service.model';
+import { ServiceType } from '../../../enums/serviceType';
 
 interface IStripeAccountInfo {
     status?: boolean;
@@ -41,6 +43,7 @@ export type IUser = {
     taxId?: string;
     proofOwnerId?: string[];
     sallonPhoto?: string[];
+    serviceType?: ServiceType;
     isUpdate: boolean;
     verified: boolean;
     discount?: number;

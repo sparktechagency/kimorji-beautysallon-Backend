@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import ApiError from "../../../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
 import config from "../../../config";
+import { ServiceType } from '../../../enums/serviceType';
 
 const userSchema = new Schema<IUser, UserModal>(
   {
@@ -137,6 +138,12 @@ const userSchema = new Schema<IUser, UserModal>(
     gender: {
       type: String,
       enum: ["Male", "Female", "Children", 'Others'],
+      required: false,
+    },
+
+    serviceType: {
+      type: String,
+      enum: Object.values(ServiceType),
       required: false,
     },
 

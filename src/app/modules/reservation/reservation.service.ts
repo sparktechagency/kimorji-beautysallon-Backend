@@ -515,7 +515,7 @@ const getAvailableSlots = async (serviceId: string, date: string): Promise<Avail
 };
 
 const barberReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<any> => {
-  const { page, limit, status, coordinates } = query;
+  const { page, limit, searchTerm, status, coordinates } = query;
 
   if (!coordinates) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
@@ -527,6 +527,13 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
 
   if (status) {
     condition['status'] = status;
+  }
+  if (searchTerm) {
+    condition['$or'] = [
+      { 'service.serviceType': { $regex: searchTerm, $options: 'i' } },
+      // { 'service.title': { $regex: searchTerm, $options: 'i' } },
+      // { 'service.category': { $regex: searchTerm, $options: 'i' } },
+    ]
   }
 
   const pages = parseInt(page as string) || 1;

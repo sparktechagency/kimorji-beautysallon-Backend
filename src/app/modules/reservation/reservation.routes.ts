@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.route("/")
     .post(
-        auth(USER_ROLES.CUSTOMER),
+        auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
         async (req: Request, res: Response, next: NextFunction) => {
             try {
                 const { price, travelFee, appCharge, ...othersPayload } = req.body;
@@ -27,7 +27,7 @@ router.route("/")
         ReservationController.createReservation
     )
     .get(
-        auth(USER_ROLES.CUSTOMER),
+        auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
         ReservationController.customerReservation,
     );
 
