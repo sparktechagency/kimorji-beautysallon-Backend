@@ -532,7 +532,21 @@ const barberDetailsFromDB2 = async (user: JwtPayload): Promise<{}> => {
     const [barber, portfolios, reviews, rating]: any = await Promise.all([
         User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth").lean(),
         Portfolio.find({ barber: user?.id }).select("image"),
-        Review.find({ barber: user?.id }).populate({ path: "customer", select: "name" }).select("barber comment createdAt rating "),
+        Review.find({ 
+            barber: user?.id })
+            .populate({
+                 path: "customer service barber",
+                select: "name profile" })
+                .select("barber comment createdAt rating service")
+        .populate({
+        path: "service",
+        select: "title serviceName", 
+        populate: {
+            path: "title", 
+            model: "SubCategory",
+            select: "title"
+        }
+    }),
         Review.aggregate([
             {
                 $match: {

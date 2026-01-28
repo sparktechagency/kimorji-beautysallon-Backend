@@ -13,6 +13,7 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
     },
+
     ownerName: {
       type: String,
       required: false,
@@ -22,18 +23,22 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       required: false,
     },
+
     appId: {
       type: String,
       required: false,
     },
+
     establishedYear: {
       type: String,
       required: false,
     },
+
     licenseNumber: {
       type: String,
       required: false,
     },
+
     taxId: {
       type: String,
       required: false,
@@ -44,6 +49,7 @@ const userSchema = new Schema<IUser, UserModal>(
       enum: Object.values(USER_ROLES),
       required: true,
     },
+
     IsLocked: {
       type: Boolean,
       default: false,
@@ -90,6 +96,7 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       default: 'https://res.cloudinary.com/ddqovbzxy/image/upload/v1736572642/avatar_ziy9mp.jpg',
     },
+
     tradeLicences: {
       type: [String],
       required: false,
@@ -101,16 +108,19 @@ const userSchema = new Schema<IUser, UserModal>(
       required: false,
       default: []
     },
+
     sallonPhoto: {
       type: [String],
       required: false,
       default: []
 
     },
+
     isUpdate: {
       type: Boolean,
       default: false,
     },
+
     verified: {
       type: Boolean,
       default: false,
