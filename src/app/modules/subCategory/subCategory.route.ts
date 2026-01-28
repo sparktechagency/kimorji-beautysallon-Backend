@@ -13,7 +13,6 @@ router.route("/")
         SubCategoryController.createSubCategory
     )
     .get(
-        auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
         SubCategoryController.getSubCategories
     );
 
