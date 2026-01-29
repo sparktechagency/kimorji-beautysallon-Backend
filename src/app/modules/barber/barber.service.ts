@@ -530,7 +530,7 @@ const getBarberListFromDB = async (user: JwtPayload, query: Record<string, any>)
 const barberDetailsFromDB2 = async (user: JwtPayload): Promise<{}> => {
 
     const [barber, portfolios, reviews, rating]: any = await Promise.all([
-        User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth").lean(),
+        User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth discount").lean(),
         Portfolio.find({ barber: user?.id }).select("image"),
         Review.find({ 
             barber: user?.id })
