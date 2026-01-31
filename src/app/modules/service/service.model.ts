@@ -35,8 +35,8 @@ const serviceSchema = new Schema<IService, ServiceModel>(
       enum: Object.values(ServiceType),
       required: false
     },
-    title: { type: Schema.Types.ObjectId, ref: "SubCategory", required: true },
-    category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+    title: { type: Schema.Types.ObjectId, ref: "SubCategory", required: false },
+    category: { type: Schema.Types.ObjectId, ref: "Category", required: false },
     image: {
       type: String,
       default: "https://res.cloudinary.com/ddqovbzxy/image/upload/v1734498548/Barbar_Me_u4jj7s.png"

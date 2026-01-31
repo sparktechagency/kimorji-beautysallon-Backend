@@ -23,7 +23,6 @@ router.get('/profile',
 );
 
 
-
 router.get('/offer',
     BarberController.specialOfferBarber
 );
