@@ -1,17 +1,18 @@
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { StatusCodes } from "http-status-codes";
-import { Morgan } from "./shared/morgan";
+import "express-async-errors";
 import router from '../src/app/routes';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import handleStripeWebhook from "./webhook/handleStripeWebhook";
 import seedSuperAdmin from "./DB";
 import { debug } from "winston";
 import { requestLogger } from "./responseTimeLogger/response.time";
+import { Morgan } from "./shared/morgan";
 const app = express();
 // morgan
-// app.use(Morgan.successHandler);
-// app.use(Morgan.errorHandler);
+app.use(Morgan.successHandler);
+app.use(Morgan.errorHandler);
 
 //debug
 app.use(requestLogger());

@@ -14,11 +14,11 @@ import { setupSecurity } from "./app/modules/cluster/setup.security";
 // CRITICAL: Remove global uncaughtException handler - let cluster handle it
 // Only handle it in master process
 if (cluster.isPrimary) {
-    process.on('uncaughtException', error => {
-        errorLogger.error('Master uncaughtException Detected', error);
-        process.exit(1);
+    process.on('unhandledRejection', error => {
+        errorLogger.error('Master unhandledRejection Detected', error);
+        process.exit(1); // <--- এটি সার্ভার বন্ধ করে দিচ্ছে
     });
-
+    
     process.on('unhandledRejection', error => {
         errorLogger.error('Master unhandledRejection Detected', error);
         process.exit(1);
@@ -93,6 +93,7 @@ async function bootstrap() {
         process.exit(1);
     }
 }
+
 
 // Start the application
 bootstrap();

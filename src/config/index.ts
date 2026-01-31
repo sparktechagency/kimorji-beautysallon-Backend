@@ -30,10 +30,9 @@ export default {
         password: process.env.ADMIN_PASSWORD
     },
     twilio: {
-        accountSid: process.env.TWILIO_ACCOUNT_SID || 'your_twilio_sid',
-        authToken: process.env.TWILIO_AUTH_TOKEN || 'your_twilio_auth_token',
-        serviceSid: process.env.TWILIO_VERIFY_SERVICE_SID || 'your_twilio_verify_service_sid',
-        twilioNumber: process.env.TWILIO_PHONE_NUMBER || 'your_twilio_phone_number'
+        twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || 'your_twilio_sid',
+        twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || 'your_twilio_auth_token',
+        twilioServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID || 'your_twilio_verify_service_sid',
     },
 
     google_maps: process.env.GOOGLE_MAPS_API_KEY
