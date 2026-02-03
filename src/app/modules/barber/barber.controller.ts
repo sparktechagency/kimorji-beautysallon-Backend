@@ -8,12 +8,10 @@ import { Secret } from "jsonwebtoken";
 import config from "../../../config";
 
 const getBarberProfile = catchAsync(async (req: Request, res: Response) => {
-    const token = req.body.token;
-    let user: any;
-    if (token) {
-        user = jwtHelper.verifyToken(token as string, config.jwt.jwt_secret as Secret);
-    }
-    const result = await BarberService.getBarberProfileFromDB(user, req.params.id, req.query);
+    const user = req.user; 
+    const id = req.params.id;
+    const query = req.query;
+    const result = await BarberService.getBarberProfileFromDB(user, id, query);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,
@@ -95,7 +93,7 @@ const getBarberList = catchAsync(async (req: Request, res: Response) => {
 });
 
 const barberDetails = catchAsync(async (req: Request, res: Response) => {
-    const result = await BarberService.barberDetailsFromDB2(req.user);
+    const result = await BarberService.barberDetailsFromDB(req.params.id);
 
     sendResponse(res, {
         statusCode: StatusCodes.OK,

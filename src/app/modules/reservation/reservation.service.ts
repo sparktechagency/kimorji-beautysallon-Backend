@@ -514,13 +514,13 @@ const getAvailableSlots = async (serviceId: string, date: string): Promise<Avail
   };
 };
 
+
 const barberReservationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<any> => {
   const { page, limit, searchTerm, status, coordinates } = query;
 
   if (!coordinates) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates")
   }
-
   const condition: any = {
     barber: user.id
   }
@@ -528,18 +528,32 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
   if (status) {
     condition['status'] = status;
   }
+
   if (searchTerm) {
+    const matchedServices = await Service.find({
+      $or: [
+        { serviceType: { $regex: searchTerm, $options: 'i' } },
+      ]
+    }).select('_id');
+
+    const serviceIds = matchedServices.map(s => s._id);
+
+    // const matchedCustomers = await Customer.find({
+    //     name: { $regex: searchTerm, $options: 'i' } 
+    // }).select('_id');
+    // const customerIds = matchedCustomers.map(c => c._id);
+
     condition['$or'] = [
-      { 'service.serviceType': { $regex: searchTerm, $options: 'i' } },
-      // { 'service.title': { $regex: searchTerm, $options: 'i' } },
-      // { 'service.category': { $regex: searchTerm, $options: 'i' } },
-    ]
+      { service: { $in: serviceIds } },
+      // { customer: { $in: customerIds } } 
+    ];
   }
 
   const pages = parseInt(page as string) || 1;
   const size = parseInt(limit as string) || 10;
   const skip = (pages - 1) * size;
 
+  // ৩. কুয়েরি চালানো (বাকি সব আগের মতোই থাকবে)
   const reservations = await Reservation.find(condition)
     .populate([
       {
@@ -548,7 +562,7 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
       },
       {
         path: 'service',
-        select: "title category ",
+        select: "title category serviceType", // serviceType দেখতে চাইলে এখানে select এ অ্যাড করুন
         populate: [
           {
             path: "title",
@@ -568,7 +582,9 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
 
   const count = await Reservation.countDocuments(condition);
 
-  // check how many reservation in each status
+  // ... বাকি কোড অপরিবর্তিত ...
+  
+  // (All Status কাউন্ট লজিক অপরিবর্তিত)
   const allStatus = await Promise.all(["Upcoming", "Accepted", "Canceled", "Completed"].map(
     async (status: string) => {
       return {
@@ -578,6 +594,7 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
     })
   );
 
+  // (Distance লজিক অপরিবর্তিত)
   const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
     const distance = await getDistanceFromCoordinates(reservation?.customer?.location?.coordinates, JSON?.parse(coordinates));
     const report = await Report.findOne({ reservation: reservation?._id });
@@ -601,7 +618,6 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
     total: count,
     limit: size
   }
-
 
   return { data, meta };
 }

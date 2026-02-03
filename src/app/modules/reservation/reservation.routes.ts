@@ -60,11 +60,11 @@ router.route("/:id")
         ReservationController.reservationDetails
     )
     .patch(
-        auth(USER_ROLES.BARBER),
+        auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
         ReservationController.respondedReservation
     )
     .delete(
-        auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
+        auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER,),
         ReservationController.cancelReservation
     );
 

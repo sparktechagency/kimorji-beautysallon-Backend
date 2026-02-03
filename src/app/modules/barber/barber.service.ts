@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
 import { User } from "../user/user.model";
 import { Portfolio } from "../portfolio/portfolio.model";
@@ -17,103 +18,6 @@ import { SubCategory } from "../subCategory/subCategory.model";
 import { redis } from "../redis/client";
 import { logger } from "../../../shared/logger";
 
-// const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
-//     const { coordinates } = query;
-//     const cacheKey = `services:${coordinates}}`
-
-//     try {
-//         const cached = await redis.get(cacheKey)
-//         if (cached) {
-//             logger.info(`Cache hit for key ${cacheKey}`)
-//             return JSON.parse(cached)
-//         }
-//     } catch (e) {
-//         logger.warn(`Redis get failed: ${e}`)
-//     }
-//     if (!coordinates) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates");
-//     }
-
-//     if (!mongoose.Types.ObjectId.isValid(id)) {
-//         throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID");
-//     }
-
-//     const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
-
-//         User.findById(id).select("name email profile about address contact location gender sallonType  dateOfBirth").lean(),
-//         Portfolio.find({ barber: id }).select("image"),
-//         Review.find({ barber: id })
-//             .populate({ path: "customer", select: "name" })
-//             .populate({
-//                 path: "service",
-//                 select: "title price category duration image",
-//                 populate: {
-//                     path: "title",
-//                     select: "title"
-//                 }
-//             })
-//             .select("barber comment createdAt rating service"),
-//         Review.aggregate([
-//             {
-//                 $match: { barber: id }
-//             },
-//             {
-//                 $group: {
-//                     _id: null,
-//                     totalRatingCount: { $sum: 1 },
-//                     totalRating: { $sum: "$rating" }
-//                 }
-//             },
-//             {
-//                 $project: {
-//                     _id: 0,
-//                     totalRatingCount: 1,
-//                     averageRating: { $divide: ["$totalRating", "$totalRatingCount"] }
-//                 }
-//             },
-//             {
-//                 $lookup: {
-//                     from: "services",
-//                     localField: "service",
-//                     foreignField: "_id",
-//                     as: "service"
-//                 }
-//             },
-//         ]),
-//         Service.find({ barber: id }).populate("title", "title").select("title duration category price image")
-
-//     ]);
-
-//     if (!barber) {
-//         throw new Error("Barber not found");
-//     }
-
-//     const distance = await getDistanceFromCoordinates(barber?.location?.coordinates, JSON?.parse(coordinates));
-//     const isBookmarked = await Bookmark.findOne({ customer: user?.id, barber: id });
-
-//     const result = {
-//         ...barber,
-//         distance: distance ? distance : {},
-//         rating: {
-//             totalRatingCount: rating[0]?.totalRatingCount || 0,
-//             averageRating: rating[0]?.averageRating || 0
-//         },
-//         isBookmarked: !!isBookmarked,
-//         satisfiedClients: rating[0]?.totalRatingCount || 0,
-//         portfolios,
-//         reviews: reviews.map((review: any) => ({
-//             ...review.toObject(),
-//             serviceName: review.service?.title?.title || 'Unknown Service',
-//             image: review.service?.image || 'N/A',
-//             price: review.service?.price || 'N/A',
-//             duration: review.service?.duration || 'N/A',
-//             // cacheKey: result
-
-//         })),
-//     }
-
-//     return result;
-// };
 async function checkRedisConnection() {
     if (!redis.isOpen) {
         try {
@@ -127,91 +31,96 @@ async function checkRedisConnection() {
     }
 }
 
-const getBarberProfileFromDB = async (user: JwtPayload, id: string, query: Record<string, any>): Promise<{}> => {
+
+
+const getBarberProfileFromDB = async (user: any, id: string, query: Record<string, any>): Promise<{}> => {
     const { coordinates } = query;
     const cacheKey = `barberProfile:${id}:${coordinates}`;
 
+    const userId = user?._id ? user._id.toString() : null;
+
+    let profileData: any = null;
+
     try {
         await checkRedisConnection();
-
         const cached = await redis.get(cacheKey);
         if (cached) {
-            logger.info(`Cache hit for key ${cacheKey}`);
-            return JSON.parse(cached);
+            profileData = JSON.parse(cached);
         }
     } catch (e) {
         logger.warn(`Redis get failed: ${e}`);
     }
 
-    if (!coordinates) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates");
+    if (!profileData) {
+        if (!coordinates) {
+            throw new ApiError(StatusCodes.BAD_REQUEST, "Please Provide coordinates");
+        }
+        if (!Types.ObjectId.isValid(id)) {
+            throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID");
+        }
+
+        const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
+            User.findById(id).select("name email profile about address contact location gender sallonType dateOfBirth").lean(),
+            Portfolio.find({ barber: id }).select("image"),
+            Review.find({ barber: id })
+                .populate({ path: "customer", select: "name" })
+                .populate({
+                    path: "service",
+                    select: "title price category duration image",
+                    populate: { path: "title", select: "title" }
+                })
+                .select("barber comment createdAt rating service"),
+            Review.aggregate([
+                { $match: { barber: id } },
+                { $group: { _id: null, totalRatingCount: { $sum: 1 }, totalRating: { $sum: "$rating" } } },
+                { $project: { _id: 0, totalRatingCount: 1, averageRating: { $divide: ["$totalRating", "$totalRatingCount"] } } }
+            ]),
+            Service.find({ barber: id }).populate("title", "title").select("title duration category price image")
+        ]);
+
+        if (!barber) {
+            throw new Error("Barber not found");
+        }
+
+        const distance = await getDistanceFromCoordinates(barber?.location?.coordinates, JSON?.parse(coordinates));
+
+        profileData = {
+            ...barber,
+            distance: distance ? distance : {},
+            rating: {
+                totalRatingCount: rating[0]?.totalRatingCount || 0,
+                averageRating: rating[0]?.averageRating || 0
+            },
+            satisfiedClients: rating[0]?.totalRatingCount || 0,
+            portfolios,
+            reviews: reviews.map((review: any) => ({
+                ...review.toObject(),
+                serviceName: review.service?.title?.title || 'Unknown Service',
+                image: review.service?.image || 'N/A',
+                price: review.service?.price || 'N/A',
+                duration: review.service?.duration || 'N/A'
+            }))
+        };
+
+        try {
+            await redis.setEx(cacheKey, 600, JSON.stringify(profileData)); 
+        } catch (e) {
+            logger.warn(`Redis set failed: ${e}`);
+        }
+    }
+    let isBookmarked = false;
+    if (userId) {
+        const check = await Bookmark.exists({ 
+            customer: userId, 
+            barber: id 
+        });
+        isBookmarked = !!check; 
     }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid Barber ID");
-    }
-
-    const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
-        User.findById(id).select("name email profile about address contact location gender sallonType dateOfBirth").lean(),
-
-        Portfolio.find({ barber: id }).select("image"),
-
-        Review.find({ barber: id })
-            .populate({ path: "customer", select: "name" })
-            .populate({
-                path: "service",
-                select: "title price category duration image",
-                populate: {
-                    path: "title",
-                    select: "title"
-                }
-            })
-            .select("barber comment createdAt rating service"),
-
-        Review.aggregate([
-            { $match: { barber: id } },
-            { $group: { _id: null, totalRatingCount: { $sum: 1 }, totalRating: { $sum: "$rating" } } },
-            { $project: { _id: 0, totalRatingCount: 1, averageRating: { $divide: ["$totalRating", "$totalRatingCount"] } } }
-        ]),
-
-        Service.find({ barber: id }).populate("title", "title").select("title duration category price image")
-    ]);
-
-    if (!barber) {
-        throw new Error("Barber not found");
-    }
-
-    const distance = await getDistanceFromCoordinates(barber?.location?.coordinates, JSON?.parse(coordinates));
-
-    const isBookmarked = await Bookmark.findOne({ customer: user?.id, barber: id });
-
-    const result = {
-        ...barber,
-        distance: distance ? distance : {},
-        rating: {
-            totalRatingCount: rating[0]?.totalRatingCount || 0,
-            averageRating: rating[0]?.averageRating || 0
-        },
-        isBookmarked: !!isBookmarked,
-        satisfiedClients: rating[0]?.totalRatingCount || 0,
-        portfolios,
-        reviews: reviews.map((review: any) => ({
-            ...review.toObject(),
-            serviceName: review.service?.title?.title || 'Unknown Service',
-            image: review.service?.image || 'N/A',
-            price: review.service?.price || 'N/A',
-            duration: review.service?.duration || 'N/A'
-        }))
+    return {
+        ...profileData,
+        isBookmarked 
     };
-
-    // Cache the result in Redis with an expiration time (e.g., 10 minutes)
-    try {
-        await redis.setEx(cacheKey, 600, JSON.stringify(result)); // Set TTL to 600 seconds (10 minutes)
-    } catch (e) {
-        logger.warn(`Redis set failed: ${e}`);
-    }
-
-    return result;
 };
 
 const getCustomerProfileFromDB = async (customer: string): Promise<{}> => {
