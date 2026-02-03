@@ -16,7 +16,10 @@ router.post('/discount',
     },
     BarberController.makeDiscount
 );
-
+router.get('/own-profile',
+    auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
+    BarberController.barbaerownprofile
+);
 router.get('/profile',
     auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
     BarberController.barberDetails
@@ -35,16 +38,15 @@ router.get('/recommended',
     BarberController.recommendedBarber
 );
 
-router.get('/customer/:id',
-    auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
-    BarberController.getBarberProfile
-);
 
 router.get('/:id',
     auth(USER_ROLES.BARBER),
     BarberController.getCustomerProfile
 );
-
+router.get('/customer/:id',
+    auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER),
+    BarberController.getBarberProfile
+);
 router.get(
     '/:userId/category',
     auth(USER_ROLES.BARBER, USER_ROLES.CUSTOMER)

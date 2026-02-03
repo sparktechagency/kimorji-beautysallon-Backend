@@ -60,10 +60,10 @@ const getBarberProfileFromDB = async (user: any, id: string, query: Record<strin
         }
 
         const [barber, portfolios, reviews, rating, services]: any = await Promise.all([
-            User.findById(id).select("name email profile about address contact location gender sallonType dateOfBirth").lean(),
+            User.findById(id).select("name email profile about address contact location gender sallonType discount establishedYear dateOfBirth").lean(),
             Portfolio.find({ barber: id }).select("image"),
             Review.find({ barber: id })
-                .populate({ path: "customer", select: "name" })
+                .populate({ path: "customer", select: "name profile location email phone contact" })
                 .populate({
                     path: "service",
                     select: "title price category duration image",
@@ -91,6 +91,7 @@ const getBarberProfileFromDB = async (user: any, id: string, query: Record<strin
                 totalRatingCount: rating[0]?.totalRatingCount || 0,
                 averageRating: rating[0]?.averageRating || 0
             },
+            establishedYear: barber?.establishedYear || 'N/A',
             satisfiedClients: rating[0]?.totalRatingCount || 0,
             portfolios,
             reviews: reviews.map((review: any) => ({
@@ -98,7 +99,7 @@ const getBarberProfileFromDB = async (user: any, id: string, query: Record<strin
                 serviceName: review.service?.title?.title || 'Unknown Service',
                 image: review.service?.image || 'N/A',
                 price: review.service?.price || 'N/A',
-                duration: review.service?.duration || 'N/A'
+                duration: review.service?.duration || 'N/A',
             }))
         };
 
@@ -439,7 +440,7 @@ const getBarberListFromDB = async (user: JwtPayload, query: Record<string, any>)
 const barberDetailsFromDB2 = async (user: JwtPayload): Promise<{}> => {
 
     const [barber, portfolios, reviews, rating]: any = await Promise.all([
-        User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth discount").lean(),
+        User.findById(user?.id).select("name email profile accountInformation about address contact gender dateOfBirth discount location establishedYear").lean(),
         Portfolio.find({ barber: user?.id }).select("image"),
         Review.find({ 
             barber: user?.id })
@@ -507,7 +508,7 @@ const barberDetailsFromDB = async (barberId: string, customerId?: string): Promi
 
     const [barber, portfolios, reviews, rating, bookmark]: any = await Promise.all([
         User.findById(barberId)
-            .select("name email profile accountInformation about address contact gender dateOfBirth")
+            .select("name email profile accountInformation about address contact gender dateOfBirth discount location establishedYear")
             .lean(),
         Portfolio.find({ barber: barberId }).select("image"),
         Review.find({ barber: barberId })

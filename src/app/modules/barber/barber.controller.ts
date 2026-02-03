@@ -142,6 +142,16 @@ const getUserCategoryWithServicesAggregated = catchAsync(async (req: Request, re
     });
 });
 
+const barbaerownprofile = catchAsync(async (req: Request, res: Response) => {
+    const result = await BarberService.barberDetailsFromDB2(req.user);
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "Barber profile found",
+        data: result
+    });
+});
+
 
 export const BarberController = {
     getBarberProfile,
@@ -151,6 +161,8 @@ export const BarberController = {
     recommendedBarber,
     getBarberList,
     barberDetails,
+    getUserCategoryWithServicesAggregated,
     getUserCategoryWithServices,
+    barbaerownprofile
 
 }
