@@ -553,7 +553,6 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
   const size = parseInt(limit as string) || 10;
   const skip = (pages - 1) * size;
 
-  // ৩. কুয়েরি চালানো (বাকি সব আগের মতোই থাকবে)
   const reservations = await Reservation.find(condition)
     .populate([
       {
@@ -562,7 +561,7 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
       },
       {
         path: 'service',
-        select: "title category serviceType", // serviceType দেখতে চাইলে এখানে select এ অ্যাড করুন
+        select: "title category serviceType serviceName", 
         populate: [
           {
             path: "title",
@@ -582,9 +581,6 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
 
   const count = await Reservation.countDocuments(condition);
 
-  // ... বাকি কোড অপরিবর্তিত ...
-  
-  // (All Status কাউন্ট লজিক অপরিবর্তিত)
   const allStatus = await Promise.all(["Upcoming", "Accepted", "Canceled", "Completed"].map(
     async (status: string) => {
       return {
@@ -594,7 +590,6 @@ const barberReservationFromDB = async (user: JwtPayload, query: Record<string, a
     })
   );
 
-  // (Distance লজিক অপরিবর্তিত)
   const reservationsWithDistance = await Promise.all(reservations.map(async (reservation: any) => {
     const distance = await getDistanceFromCoordinates(reservation?.customer?.location?.coordinates, JSON?.parse(coordinates));
     const report = await Report.findOne({ reservation: reservation?._id });
@@ -649,7 +644,7 @@ const customerReservationFromDB = async (user: JwtPayload, query: Record<string,
       },
       {
         path: 'service',
-        select: "title category",
+        select: "title category serviceType serviceName",
         populate: [
           {
             path: "title",
@@ -756,7 +751,7 @@ const reservationDetailsFromDB = async (id: string): Promise<{ reservation: IRes
       },
       {
         path: 'service',
-        select: "title category"
+        select: "title category serviceName"
       }
     ])
     .select("customer service createdAt status price");

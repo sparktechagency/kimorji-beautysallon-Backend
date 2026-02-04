@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "main": "app.ts",
   "scripts": {
-    "dev": "docker compose up -d && ts-node-dev --respawn --transpile-only src/server.ts",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f redis"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
   },
   "author": "Azizul",
   "license": "ISC",

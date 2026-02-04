@@ -67,43 +67,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
 };
 
 
-// const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
-//   const { id } = user;
-//   const isExistUser: any = await User.findById(id).lean();
-//   if (!isExistUser) {
-//     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
-//   }
-
-//   const holderStatus = await Service.findOne({ barber: user.id, status: "Inactive", });
-
-//   const totalServiceCount = await Reservation.countDocuments({ customer: user.id, status: "Completed", paymentStatus: "Paid" });
-
-//   const totalSpend = await Reservation.aggregate([
-//     {
-//       $match: {
-//         customer: user.id,
-//         status: "Completed",
-//         paymentStatus: "Paid"
-//       }
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalSpend: { $sum: "$price" }
-//       }
-//     }
-//   ]);
-
-//   const data = {
-//     ...isExistUser,
-//     totalServiceCount,
-//     hold: !!holderStatus,
-//     totalSpend: totalSpend[0]?.totalSpend || 0
-//   }
-
-//   return data;
-// };
-
 const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
   const { id } = user
   const isExistUser: any = await User.findById(id)
@@ -153,19 +116,25 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
   return data
 }
 
- const toggleUserLock = async (userId: string) => {
-    // Find user by ID
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new Error("User not found");
-    }
+const toggleUserLock = async (id: string): Promise<Partial<IUser>> => {
+  const user = await User.findById(id);
 
-    // Toggle isLocked
-    user.IsLocked = !user.IsLocked;
-    await user.save();
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
 
-    return user;
-};
+  const updatedUser = await User.findByIdAndUpdate(
+    id,
+    { isLocked: !user.IsLocked },
+    { new: true }
+  )
+
+  if (!updatedUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  return updatedUser
+}
 
 const updateProfileToDB = async (
   authUser: JwtPayload,

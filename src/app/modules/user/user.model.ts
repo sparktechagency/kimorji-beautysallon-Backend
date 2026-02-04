@@ -187,6 +187,11 @@ const userSchema = new Schema<IUser, UserModal>(
       default: 0
     },
 
+    holdShop: {
+      type: Boolean,
+      default: false
+    },
+
     discount: {
       type: Number,
       default: 0

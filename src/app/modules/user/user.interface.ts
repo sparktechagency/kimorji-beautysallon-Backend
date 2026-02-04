@@ -48,6 +48,7 @@ export type IUser = {
     verified: boolean;
     discount?: number;
     shopDiscount?: number;
+    holdShop?: boolean;
     deviceToken?: string;
     // authentication?: IAuthenticationProps;
     // authentication: IAuthenticationProps;

@@ -47,7 +47,7 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 const updateProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
 
-    let profile, tradeLicences: string[] = [], proofOwnerId: string[] = [], sallonPhoto: string[] = [];
+    let profile, tradeLicences: string[] = [], proofOwnerId: string[] = [], sallonPhoto: string[] = [], about: string[] = [];
 
     if (req.files && 'image' in req.files && req.files.image[0]) { //not an array
         profile = `/images/${req.files.image[0].filename}`;
@@ -103,7 +103,7 @@ const updateLocation = catchAsync(async (req: Request, res: Response, next: Next
 
 const toggleUserLock = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const { userId: id } = req.params;
         const updatedUser = await UserService.toggleUserLock(id);
 
         return res.status(StatusCodes.OK).json({
