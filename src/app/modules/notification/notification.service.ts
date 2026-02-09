@@ -25,10 +25,23 @@ const readNotificationToDB = async (user: JwtPayload): Promise<INotification | u
 };
 
 // get notifications for admin
-const adminNotificationFromDB = async () => {
-    const result = await Notification.find({ type: 'ADMIN' });
-    const pagination = new QueryBuilder(Notification.find({ type: 'ADMIN' }), query).paginate();
-    return { result, pagination };
+const adminNotificationFromDB = async (query: Record<string, any>) => {
+    const notificationQuery = new QueryBuilder(
+        Notification.find({ type: 'ADMIN' }), 
+        query
+    )
+    .filter()
+    .sort()
+    .paginate();
+
+    const result = await notificationQuery.queryModel;
+
+    const pagination = await notificationQuery.getPaginationInfo();
+
+    return { 
+        notifications: result, 
+        pagination 
+    };
 };
 
 // read notifications only for admin

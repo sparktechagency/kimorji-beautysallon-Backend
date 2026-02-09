@@ -4,6 +4,7 @@ import { IUser } from '../user/user.interface';
 import { User } from '../user/user.model';
 import { Reservation } from '../reservation/reservation.model';
 import QueryBuilder from '../../../shared/apiFeature';
+import { Service } from '../service/service.model';
 
 const createAdminToDB = async (payload: IUser): Promise<IUser> => {
     const createAdmin: any = await User.create(payload);
@@ -65,43 +66,41 @@ const countSummaryFromDB = async () => {
         }
     ]);
 
-    const totalIncome = await Reservation.aggregate([
-        {
-            $match: {
-                status: "Completed",
-                paymentStatus: "Paid"
-            }
-        },
-        {
-            $group: {
-                _id: null,
-                total: { $sum: "$price" }
-            }
-        },
-        {
-            $project: {
-                _id: 0,
-                totalAfterDeduction: { $multiply: ["$total", 0.1] }
-            }
-        }
-    ]);
+    // const totalIncome = await Reservation.aggregate([
+    //     {
+    //         $match: {
+    //             status: "Completed",
+    //             paymentStatus: "Paid"
+    //         }
+    //     },
+    //     {
+    //         $group: {
+    //             _id: null,
+    //             total: { $sum: "$price" }
+    //         }
+    //     },
+    //     {
+    //         $project: {
+    //             _id: 0,
+    //             totalAfterDeduction: { $multiply: ["$total", 0.1] }
+    //         }
+    //     }
+    // ]);
 
     return {
         totalCustomers,
         totalBarbers,
         totalRevenue: totalRevenue[0]?.total || 0,
-        totalIncome: totalIncome[0]?.totalAfterDeduction || 0
     };
 
 }
 
-const userStatisticsFromDB = async () => {
+const userStatisticsBarberFromDB = async () => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // Initialize user statistics array with 0 counts
     const userStatisticsArray = Array.from({ length: 12 }, (_, i) => ({
         month: monthNames[i],
-        customers: 0,
         barbers: 0,
     }));
 
@@ -112,7 +111,49 @@ const userStatisticsFromDB = async () => {
     const usersAnalytics = await User.aggregate([
         {
             $match: {
-                role: { $in: ["CUSTOMER", "BARBER"] },
+                role: { $in: ["BARBER"] },
+                createdAt: { $gte: startOfYear, $lt: endOfYear }
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    month: { $month: "$createdAt" },
+                    role: "$role",
+                },
+                total: { $sum: 1 }
+            }
+        }
+    ]);
+
+    // Populate statistics array
+    usersAnalytics.forEach(stat => {
+        const monthIndex = stat._id.month - 1; // Convert month (1-12) to array index (0-11)
+        if (stat._id.role === "BARBER") {
+            userStatisticsArray[monthIndex].barbers = stat.total;
+        }
+    });
+
+    return userStatisticsArray;
+};
+
+const userStatisticsCustomerFromDB = async () => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Initialize user statistics array with 0 counts
+    const userStatisticsArray = Array.from({ length: 12 }, (_, i) => ({
+        month: monthNames[i],
+        customers: 0,
+    }));
+
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const endOfYear = new Date(now.getFullYear() + 1, 0, 1);
+
+    const usersAnalytics = await User.aggregate([
+        {
+            $match: {
+                role: { $in: ["CUSTOMER"] },
                 createdAt: { $gte: startOfYear, $lt: endOfYear }
             }
         },
@@ -132,8 +173,6 @@ const userStatisticsFromDB = async () => {
         const monthIndex = stat._id.month - 1; // Convert month (1-12) to array index (0-11)
         if (stat._id.role === "CUSTOMER") {
             userStatisticsArray[monthIndex].customers = stat.total;
-        } else if (stat._id.role === "BARBER") {
-            userStatisticsArray[monthIndex].barbers = stat.total;
         }
     });
 
@@ -182,48 +221,113 @@ const revenueStatisticsFromDB = async () => {
 };
 
 const userListFromDB = async (query: Record<string, any>) => {
-    const result = new QueryBuilder(User.find(), query).paginate().filter().search(['name', 'email']);
+    const result = new QueryBuilder(User.find(), query)
+        .search(['name', 'email'])
+        .filter()
+        .sort()
+        .paginate()
+        .fields();
+
     const users = await result.queryModel;
-    const pagination = result.getPaginationInfo();
+    const pagination = await result.getPaginationInfo(); 
 
     return { users, pagination };
 };
 
+const getAllBarbersWithDetails = async (query: Record<string, any>) => {
+    const barberQuery = new QueryBuilder(
+        User.find({ role: 'BARBER' }),
+        query
+    )
+    .search(['name', 'email', 'address'])
+    .filter()
+    .sort()
+    .paginate();
+
+    const rawBarbers = await barberQuery.queryModel.lean();
+
+    const barbers = await Promise.all(
+        rawBarbers.map(async (barber: any) => {
+            const services = await Service.find({ barber: barber._id, status: 'Active' })
+                .populate('title category')
+                .lean();
+            const serviceTypes = [...new Set(services.map(s => s.serviceType))];
+
+            const avgRating = services.length > 0 
+                ? (services.reduce((acc, curr) => acc + (curr.rating || 0), 0) / services.length).toFixed(1)
+                : 0;
+
+            return {
+                ...barber,
+                serviceStatistics: {
+                    availableTypes: serviceTypes,
+                    totalServices: services.length,
+                    averageRating: avgRating
+                },
+                services: services 
+            };
+        })
+    );
+
+    const pagination = await barberQuery.getPaginationInfo();
+
+    return {
+        barbers,
+        pagination
+    };
+};
+
 const reservationListFromDB = async (query: Record<string, any>) => {
-    const result = new QueryBuilder(Reservation.find(), query).paginate().filter();
-    const reservations = await result.queryModel.populate([
-        {
-            path: 'customer',
-            select: "name profile"
-        },
-        {
-            path: 'barber',
-            select: "name profile"
-        },
+    const result = new QueryBuilder(Reservation.find(), query)
+        .paginate()
+        .filter();
+    const rawReservations = await result.queryModel.populate([
+        { path: 'customer', select: "name profile" },
+        { path: 'barber', select: "name profile" },
         {
             path: 'service',
             select: "title category",
-            populate: [
-                {
-                    path: 'category',
-                    select: "name"
-                }
-            ]
+            populate: [{ path: 'category', select: "name" }]
+        }
+    ]);
+
+    const reservations = rawReservations.map((reservation: any) => {
+        const resObj = reservation.toObject(); 
+        
+        resObj.totalPrice = (resObj.price || 0) + (resObj.tips || 0);
+        
+        return resObj;
+    });
+
+    const filterQuery = result.queryModel.getQuery();
+    const statsAggregation = await Reservation.aggregate([
+        { $match: filterQuery },
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: { $add: ["$price", "$tips"] } }
+            }
         }
     ]);
 
     const pagination = await result.getPaginationInfo();
+    const grandTotalPrice = statsAggregation.length > 0 ? statsAggregation[0].totalRevenue : 0;
 
-    return { reservations, pagination };
+    return { 
+        reservations, 
+        pagination,
+        grandTotalPrice // Purapuri shob reservation-er total
+    };
 };
-
 export const AdminService = {
     createAdminToDB,
     deleteAdminFromDB,
     getAdminFromDB,
     countSummaryFromDB,
-    userStatisticsFromDB,
+    userStatisticsBarberFromDB,
+    userStatisticsCustomerFromDB,
     revenueStatisticsFromDB,
     userListFromDB,
-    reservationListFromDB
+    reservationListFromDB,
+    getAllBarbersWithDetails
 };

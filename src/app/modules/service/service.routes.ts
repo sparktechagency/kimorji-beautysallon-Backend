@@ -20,6 +20,7 @@ router.get(
     auth(USER_ROLES.BARBER, USER_ROLES.ADMIN),
     ServiceController.getAllServicesbarber
 );
+
 router.get(
     '/all',
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.BARBER, USER_ROLES.CUSTOMER),

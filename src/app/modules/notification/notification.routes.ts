@@ -5,7 +5,7 @@ import { NotificationController } from './notification.controller';
 const router = express.Router();
 
 router.get('/',
-    auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER),
+    auth(USER_ROLES.CUSTOMER, USER_ROLES.BARBER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
     NotificationController.getNotificationFromDB
 );
 router.get('/admin',

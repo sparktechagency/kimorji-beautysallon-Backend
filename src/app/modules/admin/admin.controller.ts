@@ -50,8 +50,17 @@ const countSummary = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const userStatistics = catchAsync(async (req: Request, res: Response) => {
-    const result = await AdminService.userStatisticsFromDB();
+const userStatisticsBarber = catchAsync(async (req: Request, res: Response) => {
+    const result = await AdminService.userStatisticsBarberFromDB();
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: 'User Statistics Retrieved Successfully',
+        data: result
+    });
+});
+const userStatisticsCustomer = catchAsync(async (req: Request, res: Response) => {
+    const result = await AdminService.userStatisticsCustomerFromDB();
     sendResponse(res, {
         statusCode: StatusCodes.OK,
         success: true,
@@ -90,13 +99,26 @@ const reservationList = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getBarber = catchAsync(async (req: Request, res: Response) => {
+    const barberId = req.params.id;
+    const result = await AdminService.getAllBarbersWithDetails(req.query);
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: 'Barber Profile Retrieved Successfully',
+        data: result
+    });
+});
+
 export const AdminController = {
     deleteAdmin,
     createAdmin,
     getAdmin,
-    userStatistics,
+    userStatisticsBarber,
+    userStatisticsCustomer,
     revenueStatistics,
     countSummary,
     userList,
-    reservationList
+    reservationList,
+    getBarber
 };

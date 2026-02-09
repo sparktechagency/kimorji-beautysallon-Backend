@@ -1,4 +1,5 @@
 class QueryBuilder {
+    [x: string]: any;
     queryModel: any;
     query: any;
 
@@ -8,10 +9,11 @@ class QueryBuilder {
     }
 
     search(searchableFields: string[]) {
-        if (this?.query.searchTerm) {
+        const searchTerm = this?.query?.searchTerm;
+        if (searchTerm) {
             this.queryModel = this.queryModel.find({
                 $or: searchableFields.map((field) => ({
-                    [field]: { $regex: this?.query?.searchTerm, $options: 'i' },
+                    [field]: { $regex: searchTerm, $options: 'i' },
                 })),
             });
         }
@@ -20,10 +22,16 @@ class QueryBuilder {
 
     filter() {
         const queryObj = { ...this.query };
-        const excludedFields = ['page', 'limit', 'searchTerm'];
+        const excludedFields = ['page', 'limit', 'searchTerm', 'sort', 'fields'];
         excludedFields.forEach((el) => delete queryObj[el]);
 
         this.queryModel = this.queryModel.find(queryObj);
+        return this;
+    }
+
+    sort() {
+        const sort = this?.query?.sort?.split(',')?.join(' ') || '-createdAt';
+        this.queryModel = this.queryModel.sort(sort);
         return this;
     }
 
@@ -35,11 +43,18 @@ class QueryBuilder {
         return this;
     }
 
+    // Ei method-ti miss chilo
+    fields() {
+        const fields = this?.query?.fields?.split(',')?.join(' ') || '-__v';
+        this.queryModel = this.queryModel.select(fields);
+        return this;
+    }
+
     async getPaginationInfo() {
         const total = await this.queryModel.model.countDocuments(this.queryModel.getQuery());
-        const totalPage = Math.ceil(total / 10);
-        const page = Number(this.query.page) || 1;
         const limit = Number(this.query.limit) || 10;
+        const page = Number(this.query.page) || 1;
+        const totalPage = Math.ceil(total / limit); // Ekhon eta dynamic
 
         return {
             total,

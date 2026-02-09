@@ -23,9 +23,14 @@ router.get('/revenue-statistics',
     AdminController.revenueStatistics
 );
 
-router.get('/user-statistics',
+router.get('/user-barber',
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
-    AdminController.userStatistics
+    AdminController.userStatisticsBarber
+);
+
+router.get('/user-customer',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+    AdminController.userStatisticsCustomer
 );
 
 router.get('/count-summary',
@@ -48,4 +53,8 @@ router.delete('/:id',
     AdminController.deleteAdmin
 );
 
+router.get('/barber',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+    AdminController.getBarber
+);
 export const AdminRoutes = router;
