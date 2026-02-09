@@ -5,13 +5,24 @@ import QueryBuilder from '../../../shared/apiFeature';
 import { query } from 'express';
 
 // get notifications
-const getNotificationFromDB = async (user: JwtPayload, query: Record<string, any>): Promise<{ notifications: INotification[], pagination: any }> => {
+const getNotificationFromDB = async (
+  user: JwtPayload, 
+  query: Record<string, any>
+): Promise<{ notifications: INotification[], pagination: any }> => {
 
-    const result = new QueryBuilder(Notification.find({ receiver: user.id }), query).paginate();
-    const notifications = await result.queryModel;
-    const pagination = result.getPaginationInfo();
+    const notificationQuery = new QueryBuilder(
+        Notification.find({ receiver: user.id }), 
+        query
+    )
+    .sort() 
+    .paginate();
+    const notifications = await notificationQuery.queryModel;
+    const pagination = await notificationQuery.getPaginationInfo(); 
 
-    return { notifications, pagination };
+    return { 
+        notifications, 
+        pagination 
+    };
 };
 
 // read notifications only for user

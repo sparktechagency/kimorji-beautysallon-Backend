@@ -13,7 +13,6 @@ const getNotificationFromDB = catchAsync( async (req: Request, res: Response) =>
         success: true,
         message: 'Notifications Retrieved Successfully',
         data: result,
-        pagination: result.pagination
     });
   }
 );
