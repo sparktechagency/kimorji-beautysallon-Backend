@@ -238,7 +238,7 @@ const getAllBarbersWithDetails = async (query: Record<string, any>) => {
     const barberQuery = new QueryBuilder(
         User.find({ role: 'BARBER' })
            
-            .select('email mobileNumber location name profile'), 
+            .select('email mobileNumber location name profile isApproved createdAt'), 
         query
     )
     .search(['name', 'email', 'location']) 
@@ -278,6 +278,16 @@ const getAllBarbersWithDetails = async (query: Record<string, any>) => {
         barbers,
         pagination
     };
+};
+
+const approveBarberFromDB = async (id: string): Promise<IUser | null> => {
+    const approvedBarber = await User.findByIdAndUpdate(
+        id,
+        { isApproved: true },
+        { new: true }
+    );
+
+    return approvedBarber ?? null;
 };
 
 const reservationListFromDB = async (query: Record<string, any>) => {
@@ -322,6 +332,8 @@ const reservationListFromDB = async (query: Record<string, any>) => {
         grandTotalPrice // Purapuri shob reservation-er total
     };
 };
+
+
 export const AdminService = {
     createAdminToDB,
     deleteAdminFromDB,
@@ -332,5 +344,6 @@ export const AdminService = {
     revenueStatisticsFromDB,
     userListFromDB,
     reservationListFromDB,
-    getAllBarbersWithDetails
+    getAllBarbersWithDetails,
+    approveBarberFromDB
 };

@@ -126,6 +126,11 @@ const userSchema = new Schema<IUser, UserModal>(
       default: false,
     },
 
+    isApproved: {
+      type: Boolean,
+      default: true,
+    },
+
     isSubscribed: {
       type: Boolean,
     },
@@ -218,6 +223,8 @@ userSchema.statics.isExistUserByEmail = async (email: string) => {
   return isExist;
 };
 
+
+
 userSchema.statics.isExistUserByMobileNumber = async (mobileNumber: string) => {
   const isExist = await User.findOne({ mobileNumber });
   return isExist;
@@ -242,6 +249,9 @@ userSchema.statics.isMatchPassword = async (password: string, hashPassword: stri
 
 userSchema.pre('save', async function (next) {
   const user = this as IUser;
+  if (user.role === USER_ROLES.BARBER) {
+    user.isApproved = false;
+  }
 
   if (this.isNew) {
     if (user.mobileNumber) {

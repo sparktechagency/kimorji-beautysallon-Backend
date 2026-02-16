@@ -59,6 +59,7 @@ const userStatisticsBarber = catchAsync(async (req: Request, res: Response) => {
         data: result
     });
 });
+
 const userStatisticsCustomer = catchAsync(async (req: Request, res: Response) => {
     const result = await AdminService.userStatisticsCustomerFromDB();
     sendResponse(res, {
@@ -110,6 +111,18 @@ const getBarber = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const approveBarber = catchAsync(async (req: Request, res: Response) => {
+    const barberId = req.params.id;
+    const result = await AdminService.approveBarberFromDB(barberId);    
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: 'Barber Approved Successfully',
+        data: result
+    });
+});
+ 
+
 export const AdminController = {
     deleteAdmin,
     createAdmin,
@@ -120,5 +133,6 @@ export const AdminController = {
     countSummary,
     userList,
     reservationList,
-    getBarber
+    getBarber,
+    approveBarber
 };

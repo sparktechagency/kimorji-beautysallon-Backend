@@ -46,6 +46,7 @@ export type IUser = {
     serviceType?: ServiceType;
     isUpdate: boolean;
     verified: boolean;
+    isApproved: boolean;
     discount?: number;
     shopDiscount?: number;
     holdShop?: boolean;

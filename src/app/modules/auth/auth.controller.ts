@@ -64,6 +64,13 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
       throw new AppError(`Invalid role. Must be either ${USER_ROLES.CUSTOMER} or ${USER_ROLES.BARBER}`, 400);
     }
 
+    else if (role === USER_ROLES.BARBER) {
+      const isApproved = false;
+      if (!isApproved) {
+        throw new AppError("Your account is pending approval. Please wait for admin approval.", 403);
+      }
+    }
+
     const result = await AuthService.loginService(
       mobileNumber,
       deviceToken || '',

@@ -34,6 +34,12 @@ const createAdminToDB = async (payload: any): Promise<IUser> => {
 }
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
+  
+  if (payload.role === USER_ROLES.BARBER) {
+    payload.isApproved = false;
+  }
+
+  // 2. Create the user
   const createUser = await User.create(payload);
   if (!createUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
@@ -41,30 +47,73 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
 
   console.log(createUser);
 
-  // Send email with OTP
-  const otp = generateOTP(); // Assume this generates the OTP
+  // 3. Generate OTP
+  const otp = generateOTP(); 
+  
+  // 4. Send Email
   const values = {
     name: createUser.name,
     otp: otp,
     email: createUser.email!
   };
-  console.log('Generated OTP:', otp);  // Log the generated OTP
+  console.log('Generated OTP:', otp);
+  
   const createAccountTemplate = emailTemplate.createAccount(values);
   emailHelper.sendEmail(createAccountTemplate);
 
-  // Save OTP in the database
+  // 5. Save OTP to DB
+  // Note: I fixed the field name below. Your Schema uses 'otpCode', but your service used 'oneTimeCode'.
   const authentication = {
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000), // OTP expires in 3 minutes
+    otpCode: otp, // Updated to match your Schema 'otpCode'
+    expireAt: new Date(Date.now() + 3 * 60000), 
   };
-  console.log('Saving OTP to database:', authentication);  // Log the OTP and expiration time
+
+  console.log('Saving OTP to database:', authentication);
+  
   await User.findOneAndUpdate(
     { _id: createUser._id },
-    { $set: { authentication } }
+    { 
+      $set: { 
+        'authentication.otpCode': authentication.otpCode,
+        'authentication.expireAt': authentication.expireAt
+      } 
+    }
   );
 
   return createUser;
 };
+// const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
+//   const createUser = await User.create(payload);
+//   if (!createUser) {
+//     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
+//   }
+
+//   console.log(createUser);
+
+//   // Send email with OTP
+//   const otp = generateOTP(); // Assume this generates the OTP
+//   const values = {
+//     name: createUser.name,
+//     otp: otp,
+//     email: createUser.email!
+//   };
+//   console.log('Generated OTP:', otp);  // Log the generated OTP
+//   const createAccountTemplate = emailTemplate.createAccount(values);
+//   emailHelper.sendEmail(createAccountTemplate);
+
+//   // Save OTP in the database
+//   const authentication = {
+//     oneTimeCode: otp,
+//     expireAt: new Date(Date.now() + 3 * 60000), // OTP expires in 3 minutes
+//   };
+//   console.log('Saving OTP to database:', authentication);  // Log the OTP and expiration time
+//   await User.findOneAndUpdate(
+//     { _id: createUser._id },
+//     { $set: { authentication } }
+//   );
+
+//   return createUser;
+// };
 
 
 const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {

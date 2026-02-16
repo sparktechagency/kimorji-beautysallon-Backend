@@ -53,6 +53,11 @@ router.delete('/:id',
     AdminController.deleteAdmin
 );
 
+router.patch('/approve-barber/:id',
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+    AdminController.approveBarber
+);
+
 router.get('/barber',
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     AdminController.getBarber
