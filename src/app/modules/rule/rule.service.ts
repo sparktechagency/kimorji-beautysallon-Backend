@@ -24,6 +24,17 @@ const createPrivacyPolicyToDB = async (payload: IRule) => {
     }
 }
 
+const updatePrivacyPolicyToDB = async (payload: IRule) => {
+
+    const isExistPrivacy = await Rule.findOne({ type: 'privacy' })
+    if (!isExistPrivacy) {
+        throw new ApiError(StatusCodes.NOT_FOUND, "Privacy & Policy not found")
+    }
+    const result = await Rule.findOneAndUpdate({ type: 'privacy' }, { content: payload?.content }, { new: true })
+    const message = "Privacy & Policy Updated successfully"
+    return { message, result }
+    }
+
 const getPrivacyPolicyFromDB = async () => {
     const result = await Rule.findOne({ type: 'privacy' })
     if (!result) {
@@ -34,19 +45,35 @@ const getPrivacyPolicyFromDB = async () => {
 
 //terms and conditions
 const createTermsAndConditionToDB = async (payload: IRule) => {
+    const result = await Rule.findOneAndUpdate(
+        { type: 'terms' }, 
+        { 
+            $set: { 
+                content: payload.content,
+                type: 'terms' 
+            } 
+        },
+        { 
+            new: true,      
+            upsert: true,  
+            runValidators: true 
+        }
+    );
+
+    const message = "Terms And Condition saved successfully";
+    return { message, result };
+};
+
+const updateTermsAndConditionToDB = async (payload: IRule) => {
 
     const isExistTerms = await Rule.findOne({ type: 'terms' })
-    if (isExistTerms) {
-        const result = await Rule.findOneAndUpdate({ type: 'terms' }, { content: payload?.content }, { new: true })
-        const message = "Terms And Condition Updated successfully"
-        return { message, result }
-
-    } else {
-        const result = await Rule.create({ ...payload, type: 'terms' });
-        const message = "Terms And Condition Created Successfully"
-        return { message, result }
+    if (!isExistTerms) {
+        throw new ApiError(StatusCodes.NOT_FOUND, "Terms And Condition not found")
     }
-}
+    const result = await Rule.findOneAndUpdate({ type: 'terms' }, { content: payload?.content }, { new: true })
+    const message = "Terms And Condition Updated successfully"
+    return { message, result }
+    }
 
 const getTermsAndConditionFromDB = async () => {
     const result = await Rule.findOne({ type: 'terms' })
@@ -71,6 +98,17 @@ const createAboutToDB = async (payload: IRule) => {
     }
 }
 
+const updateAboutToDB = async (payload: IRule) => {
+
+    const isExistAbout = await Rule.findOne({ type: 'about' })
+    if (!isExistAbout) {
+        throw new ApiError(StatusCodes.NOT_FOUND, "About Us not found")
+    }
+    const result = await Rule.findOneAndUpdate({ type: 'about' }, { content: payload?.content }, { new: true })
+    const message = "About Us Updated successfully"
+    return { message, result }
+}
+
 const getAboutFromDB = async () => {
 
     const result = await Rule.findOne({ type: 'about' })
@@ -87,5 +125,8 @@ export const RuleService = {
     createTermsAndConditionToDB,
     getTermsAndConditionFromDB,
     createAboutToDB,
-    getAboutFromDB
+    getAboutFromDB,
+    updatePrivacyPolicyToDB,
+    updateTermsAndConditionToDB,
+    updateAboutToDB
 }  

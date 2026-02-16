@@ -236,10 +236,12 @@ const userListFromDB = async (query: Record<string, any>) => {
 
 const getAllBarbersWithDetails = async (query: Record<string, any>) => {
     const barberQuery = new QueryBuilder(
-        User.find({ role: 'BARBER' }),
+        User.find({ role: 'BARBER' })
+           
+            .select('email mobileNumber location name profile'), 
         query
     )
-    .search(['name', 'email', 'address'])
+    .search(['name', 'email', 'location']) 
     .filter()
     .sort()
     .paginate();
@@ -251,6 +253,7 @@ const getAllBarbersWithDetails = async (query: Record<string, any>) => {
             const services = await Service.find({ barber: barber._id, status: 'Active' })
                 .populate('title category')
                 .lean();
+            
             const serviceTypes = [...new Set(services.map(s => s.serviceType))];
 
             const avgRating = services.length > 0 

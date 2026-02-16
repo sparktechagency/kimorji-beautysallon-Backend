@@ -18,6 +18,19 @@ const createPrivacyPolicy = catchAsync(async (req: Request, res: Response) => {
     })
 })
 
+const updatePrivacyPolicy = catchAsync(async (req: Request, res: Response) => {
+    const { ...privacyData } = req.body
+    const result = await RuleService.updatePrivacyPolicyToDB(privacyData)
+  
+    sendResponse(res, {
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Privacy policy updated successfully',
+        data: result
+    })
+})
+
+
 const getPrivacyPolicy = catchAsync(async (req: Request, res: Response) => {
     const result = await RuleService.getPrivacyPolicyFromDB()
   
@@ -42,7 +55,19 @@ const createTermsAndCondition = catchAsync( async (req: Request, res: Response) 
         data: result
     })
 })
+
+const updateTermsAndCondition = catchAsync( async (req: Request, res: Response) => {
+    const { ...termsData } = req.body
+    const result = await RuleService.updateTermsAndConditionToDB(termsData)
   
+    sendResponse(res, {
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Terms and conditions updated successfully',
+        data: result
+    })
+})
+
 const getTermsAndCondition = catchAsync(async (req: Request, res: Response) => {
     const result = await RuleService.getTermsAndConditionFromDB()
   
@@ -66,6 +91,19 @@ const createAbout = catchAsync(async (req: Request, res: Response) => {
         data: result
     })
 })
+
+const updateAbout = catchAsync(async (req: Request, res: Response) => {
+    const { ...aboutData } = req.body
+    const result = await RuleService.updateAboutToDB(aboutData)
+  
+    sendResponse(res, {
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'About updated successfully',
+        data: result
+    })
+})
+
   
 const getAbout = catchAsync(async (req: Request, res: Response) => {
     const result = await RuleService.getAboutFromDB()
@@ -78,11 +116,15 @@ const getAbout = catchAsync(async (req: Request, res: Response) => {
     })
 })
 
+
 export const RuleController = {
     createPrivacyPolicy,
     getPrivacyPolicy,
     createTermsAndCondition,
     getTermsAndCondition,
     createAbout,
-    getAbout
+    getAbout,
+    updatePrivacyPolicy,
+    updateTermsAndCondition,
+    updateAbout
 }  

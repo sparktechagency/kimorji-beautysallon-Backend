@@ -16,12 +16,13 @@ router
 router
     .route('/privacy-policy')
     .post(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), RuleController.createPrivacyPolicy)
-    .get(RuleController.getPrivacyPolicy);
+    .get(RuleController.getPrivacyPolicy)
 
 //terms and conditions
 router
     .route('/terms-and-conditions')
+    .get(RuleController.getTermsAndCondition)
     .post(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), RuleController.createTermsAndCondition)
-    .get(RuleController.getTermsAndCondition);
+
 
 export const RuleRoutes = router;
