@@ -5,22 +5,20 @@ import { User } from '../user/user.model';
 import { Reservation } from '../reservation/reservation.model';
 import QueryBuilder from '../../../shared/apiFeature';
 import { Service } from '../service/service.model';
+import { USER_ROLES } from '../../../enums/user';
 
 const createAdminToDB = async (payload: IUser): Promise<IUser> => {
-    const createAdmin: any = await User.create(payload);
+    payload.role = USER_ROLES.ADMIN; 
+    payload.verified = true;
+
+    const createAdmin = await User.create(payload);
+
     if (!createAdmin) {
         throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create Admin');
     }
-    if (createAdmin) {
-        await User.findByIdAndUpdate(
-            { _id: createAdmin?._id },
-            { verified: true },
-            { new: true }
-        );
-    }
+
     return createAdmin;
 };
-
 const deleteAdminFromDB = async (id: any): Promise<IUser | undefined> => {
     const isExistAdmin = await User.findByIdAndDelete(id);
     if (!isExistAdmin) {

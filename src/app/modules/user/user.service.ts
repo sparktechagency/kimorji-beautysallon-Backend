@@ -82,39 +82,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
 
   return createUser;
 };
-// const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
-//   const createUser = await User.create(payload);
-//   if (!createUser) {
-//     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
-//   }
-
-//   console.log(createUser);
-
-//   // Send email with OTP
-//   const otp = generateOTP(); // Assume this generates the OTP
-//   const values = {
-//     name: createUser.name,
-//     otp: otp,
-//     email: createUser.email!
-//   };
-//   console.log('Generated OTP:', otp);  // Log the generated OTP
-//   const createAccountTemplate = emailTemplate.createAccount(values);
-//   emailHelper.sendEmail(createAccountTemplate);
-
-//   // Save OTP in the database
-//   const authentication = {
-//     oneTimeCode: otp,
-//     expireAt: new Date(Date.now() + 3 * 60000), // OTP expires in 3 minutes
-//   };
-//   console.log('Saving OTP to database:', authentication);  // Log the OTP and expiration time
-//   await User.findOneAndUpdate(
-//     { _id: createUser._id },
-//     { $set: { authentication } }
-//   );
-
-//   return createUser;
-// };
-
 
 const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> => {
   const { id } = user
